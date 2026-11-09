@@ -1,0 +1,36 @@
+# Format: JSON string per line with keys: "text", "expected", "amountCents", "type", "ref", "acc", "isHigh"
+# expected: "parsed" or "rejected"
+# type: "expense" or "income"
+
+{"text": "Dear SBI User, your A/c XX1234 has been debited by Rs. 1,450.00 on 12-Oct-24 towards Amazon India. UPI Ref: 329182391283. Avl Bal: Rs 45,210.50.", "expected": "parsed", "amountCents": 145000, "type": "expense", "ref": "329182391283", "acc": "1234", "isHigh": true}
+{"text": "HDFC Bank: Rs 5,00,000.00 credited to A/c **5678 on 10/10/24 from TECH CORP SALARY. Ref no 9988776655.", "expected": "parsed", "amountCents": 50000000, "type": "income", "ref": "9988776655", "acc": "5678", "isHigh": true}
+{"text": "ICICI Bank Alert: You have spent INR 250.50 on Card XX9999 at STARBUCKS COFFEE on 08-OCT-24. Avl Limit INR 1,50,000.", "expected": "parsed", "amountCents": 25050, "type": "expense", "acc": "9999", "isHigh": true}
+{"text": "Axis Bank: Rs.0.99 debited from A/c XX4321 for verification. Txn Id AX1029384756.", "expected": "parsed", "amountCents": 99, "type": "expense", "ref": "AX1029384756", "acc": "4321", "isHigh": true}
+{"text": "Kotak: Rs 1,234.5 transferred to John Doe via UPI Ref 445566778899 on 10-10-2024.", "expected": "parsed", "amountCents": 123450, "type": "expense", "ref": "445566778899", "isHigh": true}
+{"text": "Refund of Rs 899.00 processed for your order at SWIGGY to A/c XX1122. RRN 5544332211.", "expected": "parsed", "amountCents": 89900, "type": "income", "ref": "5544332211", "acc": "1122", "isHigh": false}
+{"text": "Reversal of Rs. 350.00 credited to Card ending 8888. Reference no 11223344.", "expected": "parsed", "amountCents": 35000, "type": "income", "ref": "11223344", "acc": "8888", "isHigh": false}
+{"text": "Dear Customer, INR 12,500 deposited into your A/c 3344 on 10-OCT-24. Available balance: INR 85,000.", "expected": "parsed", "amountCents": 1250000, "type": "income", "acc": "3344", "isHigh": true}
+{"text": "Paid Rs 45 at CHAI POINT via UPI/123456789012/ChaiPoint/.", "expected": "parsed", "amountCents": 4500, "type": "expense", "ref": "123456789012", "isHigh": true}
+{"text": "Sent Rs. 3,500 to Mom via UPI Ref 887766554433 from A/c XX7777.", "expected": "parsed", "amountCents": 350000, "type": "expense", "ref": "887766554433", "acc": "7777", "isHigh": true}
+{"text": "Payment of ₹1,899.00 done at NETFLIX using Card XX4455. Txn Id 90908080.", "expected": "parsed", "amountCents": 189900, "type": "expense", "ref": "90908080", "acc": "4455", "isHigh": true}
+{"text": "Bank of Baroda: Rs 15000.00 withdrawn from ATM using card 1212. Avl Bal Rs 5000.", "expected": "parsed", "amountCents": 1500000, "type": "expense", "acc": "1212", "isHigh": true}
+{"text": "Purchase of INR 4,999.00 on your Credit Card XX0011 at ZARA. Balance limit: INR 40,000.", "expected": "parsed", "amountCents": 499900, "type": "expense", "acc": "0011", "isHigh": true}
+{"text": "Rs. 200 credited to your wallet from friend. Ref no 77665544.", "expected": "parsed", "amountCents": 20000, "type": "income", "ref": "77665544", "isHigh": true}
+{"text": "INR 50 charged for SMS alert service on A/c XX9988.", "expected": "parsed", "amountCents": 5000, "type": "expense", "acc": "9988", "isHigh": true}
+
+# Rejection test cases (OTP, Promos, Statements, Failures, Foreign currencies, Person messages)
+{"text": "Your OTP for login to SBI Yono is 482910. Do not share with anyone. Valid for 5 mins.", "expected": "rejected"}
+{"text": "Never share your One Time Password. 902183 is your secret code for Rs 500 transaction.", "expected": "rejected"}
+{"text": "Congratulations! You are pre-approved for a personal loan of Rs 5,00,000. Click http://bank.co to apply.", "expected": "rejected"}
+{"text": "Dear user, claim now up to Rs 1000 cashback on your next electricity bill. Click here.", "expected": "rejected"}
+{"text": "Your Credit Card statement for Sept has total amount due Rs. 14,500.00. Min amount due Rs. 1,000. Due date 15-Oct.", "expected": "rejected"}
+{"text": "Bill generated for Airtel Mobile: Rs 799 due by 20-Oct-2024. Pay now to avoid charges.", "expected": "rejected"}
+{"text": "Collect request received for Rs. 500 from electricity_board@upi. Approve on your UPI app.", "expected": "rejected"}
+{"text": "Mandate request of Rs 299 for Spotify is scheduled on 15th of every month.", "expected": "rejected"}
+{"text": "Your SIP of Rs. 2,000 will be debited from A/c XX1234 on 15-OCT-2024.", "expected": "rejected"}
+{"text": "Transaction of Rs. 1,200 failed at Reliance Fresh due to insufficient funds.", "expected": "rejected"}
+{"text": "Your payment of INR 850 was declined by bank. Please try another card.", "expected": "rejected"}
+{"text": "Payment unsuccessful: Rs 300 could not be processed for Swiggy.", "expected": "rejected"}
+{"text": "You received $50.00 from Paypal to your USD balance.", "expected": "rejected"}
+{"text": "Hey bro, can you send me 500 rupees tomorrow?", "expected": "rejected"}
+{"text": "Meeting at 5 pm in room 202.", "expected": "rejected"}

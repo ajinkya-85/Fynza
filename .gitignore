@@ -1,0 +1,60 @@
+# Production-ready Flutter .gitignore
+# -------------------------------------------------
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+
+# IDE & editor files
+.idea/
+.vscode/
+
+# IntelliJ/Android Studio project files
+*.iml
+*.ipr
+*.iws
+
+# Flutter/Dart/Pub generated files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+
+# Generated Dart code (e.g., from build_runner, json_serializable)
+*.g.dart
+
+# iOS build artefacts
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/Podfile.lock
+
+# Android build artefacts
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/app/*.keystore
+
+# macOS build artefacts
+macos/DerivedData/
+
+# Web build artefacts
+web/.dart_tool/
+
+# General build output
+build/
+
+# Coverage reports
+coverage/
+
+# Symbolication / obfuscation files (optional)
+app.*.symbols
+app.*.map.json
+
+# Lock files (optional – keep if you want to version‑pin dependencies)
+# pubspec.lock
+

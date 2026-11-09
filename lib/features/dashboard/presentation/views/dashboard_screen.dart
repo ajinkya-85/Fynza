@@ -211,7 +211,7 @@ class DashboardScreen extends ConsumerWidget {
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                              Icons.receipt_long_outlined,
+                              Icons.savings_outlined,
                               color: AppTheme.primaryAmber,
                               size: 26,
                             ),

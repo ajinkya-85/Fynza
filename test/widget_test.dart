@@ -35,19 +35,34 @@ void main() {
     expect(find.text('Net Balance'), findsOneWidget);
 
     // Switch to Transactions tab
-    await tester.tap(find.byIcon(Icons.receipt_long_outlined));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.byIcon(Icons.receipt_long_outlined),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Transactions'), findsWidgets);
 
     // Switch to Budgets tab
-    await tester.tap(find.byIcon(Icons.pie_chart_outline));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.byIcon(Icons.pie_chart_outline),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Budgets'), findsWidgets);
 
     // Switch to Categories tab
-    await tester.tap(find.byIcon(Icons.category_outlined));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(NavigationBar),
+        matching: find.byIcon(Icons.category_outlined),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Categories'), findsWidgets);

@@ -46,7 +46,7 @@ jobs:
         run: flutter test
 
   build-apk:
-    name: Build Android APK
+    name: Build Android Release APK
     needs: analyze-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -73,14 +73,13 @@ jobs:
       - name: Generate code (Drift)
         run: dart run build_runner build --delete-conflicting-outputs
 
-      - name: Build Debug APK
-        run: flutter build apk --debug
+      - name: Build Release APK
+        run: flutter build apk --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: fynza-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: fynza-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 7
-

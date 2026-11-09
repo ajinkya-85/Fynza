@@ -7,6 +7,7 @@ import '../../../../shared/models/transaction_type.dart';
 import '../../../../shared/models/transaction_with_category.dart';
 import '../../../../shared/providers/global_month_provider.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/fluid_segmented_control.dart';
 import '../../../../shared/widgets/month_selector.dart';
 import '../view_models/transactions_notifier.dart';
@@ -106,6 +107,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -215,12 +218,16 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                               label: const Text('Add Transaction'),
                             ),
                           ))
-                    : ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
+                    : FadingScrollBoundary(
+                        fadeHeight: 28.0,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
                         itemCount: groups.length,
                         itemBuilder: (context, groupIndex) {
                           final group = groups[groupIndex];
@@ -327,6 +334,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
                           );
                         },
                       ),
+                    ),
           ),
         ],
       ),

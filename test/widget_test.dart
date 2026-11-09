@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:fynza/core/di/database_provider.dart';
 import 'package:fynza/core/services/currency_service.dart';
@@ -10,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() {
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     SharedPreferences.setMockInitialValues({});
   });
 
@@ -33,8 +35,31 @@ void main() {
     // Verify Dashboard tab is displayed initially
     expect(find.text('Dashboard'), findsWidgets);
     expect(find.text('Net Balance'), findsOneWidget);
+    expect(find.text('Budgets'), findsOneWidget);
+    expect(find.text('Categories'), findsOneWidget);
 
-    // Switch to Transactions tab
+    // Scroll to Budgets card from dashboard and tap it
+    await tester.ensureVisible(find.text('Budgets'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Budgets'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No Budgets Set'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Scroll to Categories card from dashboard and tap it
+    await tester.ensureVisible(find.text('Categories'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Categories'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Expenses'), findsOneWidget);
+    expect(find.text('Income'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // Switch to Transactions tab via NavigationBar
     await tester.tap(
       find.descendant(
         of: find.byType(NavigationBar),
@@ -45,29 +70,16 @@ void main() {
 
     expect(find.text('Transactions'), findsWidgets);
 
-    // Switch to Budgets tab
+    // Switch to Settings tab via NavigationBar
     await tester.tap(
       find.descendant(
         of: find.byType(NavigationBar),
-        matching: find.byIcon(Icons.pie_chart_outline),
+        matching: find.byIcon(Icons.settings_outlined),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Budgets'), findsWidgets);
-
-    // Switch to Categories tab
-    await tester.tap(
-      find.descendant(
-        of: find.byType(NavigationBar),
-        matching: find.byIcon(Icons.category_outlined),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Categories'), findsWidgets);
-    expect(find.text('Expenses'), findsOneWidget);
-    expect(find.text('Income'), findsOneWidget);
+    expect(find.text('Settings'), findsWidgets);
 
     await testDb.close();
   });

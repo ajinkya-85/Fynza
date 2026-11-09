@@ -49,9 +49,14 @@ Key locations:
 - **Floating Frosted `MonthSelector`**: Apple-style floating frosted glass pill with tactile chevron buttons, haptic ticks, and directional `AnimatedSwitcher` slide transitions.
 - **Hero Net Balance Card**: Tactile card wrapped in `PressableScale` with warm amber glow, pill badge ("Net Balance" / "This Month"), and bold headline balance.
 - **Side-by-Side Summary Cards**:
-  - Left card: Soft Rose Blush (`#FDECE9`) Expense card with downward arrow circular badge and coral text.
-  - Right card: Matcha Mint (`#E6F5EC`) Income card with upward arrow circular badge and jade text.
+  - Left card: Soft Rose Blush (`#FDECE9`) Expense card with upward arrow circular badge (`Icons.arrow_upward_rounded`) and coral text.
+  - Right card: Matcha Mint (`#E6F5EC`) Income card with downward arrow circular badge (`Icons.arrow_downward_rounded`) and jade text.
 - **Interactive `SpendingPieChart`**: Donut chart with spring-expanded slices on touch, haptic selection clicks, dynamic center focus ("Total Spent" or selected category details), and interactive category legend with tap-to-focus.
+- **Quick-Access Budgets & Categories Cards**: Side-by-side square squircle widget cards (1:1 aspect ratio, 22px radius, 44px circular pastel badges, and top-right arrow pills) positioned above Recent Transactions on the Dashboard:
+  - **Budgets Card**: Displays total monthly budget limit pill (`$X,XXX.XX`) above the Budgets name and subtitle.
+  - **Categories Card**: Displays dual count badges (rose blush circle with upward arrow for expenses, matcha mint circle with downward arrow for income) above the Categories name and subtitle.
+- **Smooth Fading Scroll Boundaries (`FadingScrollBoundary`)**: Soft Apple-style top and bottom fading edge gradient masks applied to scroll views with bouncy scroll physics for smooth content dissolution during scrolling.
+- **Streamlined Navigation Bar**: 3 core tabs (Dashboard, Transactions, Settings) with center-floating transaction add FAB.
 - **Tactile `TransactionTile`**: Squircle cards (18px radius) with instant press feedback (`PressableScale`), subtle hairline borders, and smooth list scrolling with `BouncingScrollPhysics`.
 - **`MoneyText`**: Dynamic colored text using `AppTheme.incomeAccent` and `AppTheme.expenseAccent`.
 
@@ -171,15 +176,28 @@ Key locations:
   1. Sets up Java 17 and Flutter stable with pub cache.
   2. Runs `flutter analyze` across all codebase and tests.
   3. Runs all 109+ tests via `flutter test`.
-  4. Builds debug APK (`flutter build apk --debug`) and uploads artifact.
+  4. Builds release APK (`flutter build apk --release`) signed with debug key so physical Android devices do not trigger "app has a bug" debugger protections, and uploads artifact `fynza-release-apk`.
 
 ## Architecture & Rule Compliance
 
 - **Pattern**: Strict Feature-First MVVM (`View → ViewModel → Repository → Service`).
-- **Layer Boundary Guarantee**: Zero views import or communicate with repositories, DAOs, or database classes directly. Views talk exclusively to their ViewModels.
+- **Layer Boundary Guarantee**: Zero views import or communicate with repositories, DAOs, or database classes directly (with cross-feature coordination managed via app-level composition). Views talk exclusively to their ViewModels.
+- **Offline-First Guarantee**: 100% offline-first operation. Zero internet permissions in `android/app/src/main/AndroidManifest.xml`.
 - **Data Integrity**: All money values are strictly integer cents (`int`), with zero floating-point conversions.
 - **Drift Database**: Schema v2 with atomic `MigrationStrategy(onUpgrade: ...)` preserving all existing data; DAOs are feature-scoped; all UI data binding uses reactive `.watch()` streams.
-- **Material 3 & Apple Fluid Design**: Centralized dynamic theming via `AppTheme`, zero hardcoded colors, full dark/light mode support. Interactive elements incorporate Apple-grade fluid motion principles: instant touch-down press feedback (`PressableScale`), critically damped springs, multi-modal haptics, frosted glass translucency, rubber-band overscroll, and optical typography tracking.
+- **Material 3 & Apple Fluid Design**:
+  - Centralized dynamic theming via `AppTheme`, zero hardcoded colors, full dark/light mode support.
+  - AppBar scrolling is seamless with `scrolledUnderElevation: 0` and `surfaceTintColor: Colors.transparent` (zero shade darkening on scroll).
+  - Fading edge scroll boundaries (`FadingScrollBoundary`) on Dashboard and Transactions.
+  - Interactive elements incorporate instant touch-down press feedback (`PressableScale`), critically damped springs, multi-modal haptics, frosted glass translucency, rubber-band overscroll (`BouncingScrollPhysics`), and optical typography tracking.
+- **Dashboard & Navigation**:
+  - Bottom Navigation Bar streamlined to 3 core tabs: Dashboard, Transactions, Settings.
+  - Quick-Access side-by-side square cards for Budgets and Categories placed on Dashboard with live monthly limits and circular count badges.
+  - Clean styling with top-right action arrows removed for a minimalist iOS-widget aesthetic.
+  - Arrow directions: Expense = Upward (`arrow_upward_rounded`), Income = Downward (`arrow_downward_rounded`).
+- **Testing**:
+  - Full unit & widget test coverage across models, DAOs, view models, and UI flows.
+  - `widget_test.dart` uses `tester.ensureVisible(...)` for offscreen scrollable elements and silences Drift multi-instance warnings in tests.
 
 ## Build & Test Commands
 
@@ -188,7 +206,7 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 dart analyze lib test
 flutter test
-flutter build apk --debug
+flutter build apk --release
 ```
 
 *Status: 109/109 tests passing; 0 analyzer issues.*

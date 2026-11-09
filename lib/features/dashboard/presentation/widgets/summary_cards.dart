@@ -181,7 +181,7 @@ class SummaryCards extends ConsumerWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              Icons.arrow_downward_rounded,
+                              Icons.arrow_upward_rounded,
                               color: expenseTextColor,
                               size: 15,
                             ),
@@ -242,7 +242,7 @@ class SummaryCards extends ConsumerWidget {
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
-                              Icons.arrow_upward_rounded,
+                              Icons.arrow_downward_rounded,
                               color: incomeTextColor,
                               size: 15,
                             ),

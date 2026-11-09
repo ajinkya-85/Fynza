@@ -12,9 +12,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final prefs = await SharedPreferences.getInstance();
 
-  final scheduler = AutoBackupScheduler(BackupPreferencesService(prefs));
-  await scheduler.initialize();
-
   runApp(
     ProviderScope(
       overrides: [
@@ -25,6 +22,14 @@ void main() async {
       child: const FynzaApp(),
     ),
   );
+
+  // Initialize background tasks without blocking initial frame rendering
+  try {
+    final scheduler = AutoBackupScheduler(BackupPreferencesService(prefs));
+    await scheduler.initialize();
+  } catch (e) {
+    debugPrint('AutoBackupScheduler initialization skipped or deferred: $e');
+  }
 }
 
 class FynzaApp extends StatelessWidget {

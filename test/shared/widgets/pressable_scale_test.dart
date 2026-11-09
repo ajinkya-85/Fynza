@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/shared/widgets/pressable_scale.dart';
+import 'package:fynza/shared/widgets/pressable_scale.dart';
 
 void main() {
   group('PressableScale Widget Tests', () {

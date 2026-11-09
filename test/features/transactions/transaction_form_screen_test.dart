@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:expense_tracker/core/di/database_provider.dart';
-import 'package:expense_tracker/core/services/currency_service.dart';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/features/transactions/presentation/views/transaction_form_screen.dart';
+import 'package:fynza/core/di/database_provider.dart';
+import 'package:fynza/core/services/currency_service.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/transactions/presentation/views/transaction_form_screen.dart';
 
 void main() {
   group('TransactionFormScreen Widget Tests', () {

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/auto_capture/domain/models/parsed_transaction.dart';
-import 'package:expense_tracker/features/auto_capture/domain/parsing/sms_transaction_parser.dart';
-import 'package:expense_tracker/shared/models/transaction_type.dart';
+import 'package:fynza/features/auto_capture/domain/models/parsed_transaction.dart';
+import 'package:fynza/features/auto_capture/domain/parsing/sms_transaction_parser.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {
   group('SmsTransactionParser Tests', () {

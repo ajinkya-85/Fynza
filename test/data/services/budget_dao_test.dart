@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/shared/models/transaction_type.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

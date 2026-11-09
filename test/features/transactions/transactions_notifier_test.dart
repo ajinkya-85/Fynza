@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/features/transactions/domain/repositories/transaction_repository.dart';
-import 'package:expense_tracker/features/transactions/presentation/view_models/transaction_form_notifier.dart';
-import 'package:expense_tracker/features/transactions/presentation/view_models/transactions_notifier.dart';
-import 'package:expense_tracker/shared/models/category_spending.dart';
-import 'package:expense_tracker/shared/models/transaction_type.dart';
-import 'package:expense_tracker/shared/models/transaction_with_category.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/transactions/domain/repositories/transaction_repository.dart';
+import 'package:fynza/features/transactions/presentation/view_models/transaction_form_notifier.dart';
+import 'package:fynza/features/transactions/presentation/view_models/transactions_notifier.dart';
+import 'package:fynza/shared/models/category_spending.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
+import 'package:fynza/shared/models/transaction_with_category.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeTransactionRepository implements TransactionRepository {

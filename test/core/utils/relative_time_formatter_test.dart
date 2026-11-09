@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/core/utils/relative_time_formatter.dart';
+import 'package:fynza/core/utils/relative_time_formatter.dart';
 
 void main() {
   group('RelativeTimeFormatter Tests', () {

@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
-import 'package:expense_tracker/core/di/database_provider.dart';
-import 'package:expense_tracker/core/services/currency_service.dart';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/main.dart';
+import 'package:fynza/core/di/database_provider.dart';
+import 'package:fynza/core/services/currency_service.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +24,7 @@ void main() {
           databaseProvider.overrideWithValue(testDb),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
-        child: const ExpenseTrackerApp(),
+        child: const FynzaApp(),
       ),
     );
 
@@ -68,7 +68,7 @@ void main() {
           databaseProvider.overrideWithValue(testDb),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
-        child: const ExpenseTrackerApp(),
+        child: const FynzaApp(),
       ),
     );
 
@@ -93,7 +93,7 @@ void main() {
           databaseProvider.overrideWithValue(testDb),
           sharedPreferencesProvider.overrideWithValue(prefs),
         ],
-        child: const ExpenseTrackerApp(),
+        child: const FynzaApp(),
       ),
     );
 

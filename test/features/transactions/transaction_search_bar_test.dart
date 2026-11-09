@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/transactions/presentation/widgets/transaction_search_bar.dart';
+import 'package:fynza/features/transactions/presentation/widgets/transaction_search_bar.dart';
 
 void main() {
   group('TransactionSearchBar Widget Tests', () {

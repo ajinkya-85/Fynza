@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/categories/presentation/views/category_form_screen.dart';
+import 'package:fynza/features/categories/presentation/views/category_form_screen.dart';
 
 void main() {
   group('CategoryFormScreen Widget Tests', () {

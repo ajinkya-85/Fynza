@@ -163,9 +163,16 @@ Key locations:
   - **Elevated `CategoriesScreen`**: FluidSegmentedControl type switcher (Expenses / Income), squircle category tiles with illuminated badges and tactile delete dialogs.
   - **Interactive `CategoryFormScreen`**: Tactile icon picker grid and color palette with animated glowing selection rings and haptics.
 
+## Application Branding & Package Information
+
+- **App Name & Brand**: **Fynza** (root widget: `FynzaApp`).
+- **Dart Package Name**: `fynza` in `pubspec.yaml` (all internal imports use `package:fynza/...`).
+- **Android Application ID & Namespace**: `io.fynza.app` (backup storage path: `/Android/data/io.fynza.app/files/backups`).
+- **iOS & Desktop Bundle IDs**: `io.fynza.app`.
+
 ## Android Configuration & Dependencies
 
-- `applicationId = "io.fynza.app"` and `namespace = "io.fynza.app"` (backup storage path: `/Android/data/io.fynza.app/files/backups`).
+- `applicationId = "io.fynza.app"` and `namespace = "io.fynza.app"`.
 - `android:label = "Fynza"` in AndroidManifest.xml.
 - `workmanager: ^0.10.0` (required for Flutter v2 embedding / Flutter 3.29+ compatibility).
 - Root `android/build.gradle.kts` overrides subproject `compileSdk = 36` in an `afterEvaluate` hook to satisfy plugin requirements.

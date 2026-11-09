@@ -1,9 +1,9 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/features/auto_capture/domain/models/capture_status.dart';
-import 'package:expense_tracker/shared/models/transaction_type.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/auto_capture/domain/models/capture_status.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {
   group('Database Schema Migration Tests (v1 -> v2)', () {

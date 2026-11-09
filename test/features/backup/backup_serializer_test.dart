@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/backup/data/models/backup_dto.dart';
-import 'package:expense_tracker/features/backup/data/services/backup_serializer.dart';
-import 'package:expense_tracker/features/backup/domain/models/backup_failure.dart';
+import 'package:fynza/features/backup/data/models/backup_dto.dart';
+import 'package:fynza/features/backup/data/services/backup_serializer.dart';
+import 'package:fynza/features/backup/domain/models/backup_failure.dart';
 
 void main() {
   group('BackupSerializer Tests', () {

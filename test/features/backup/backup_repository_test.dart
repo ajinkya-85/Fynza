@@ -4,13 +4,13 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:expense_tracker/core/services/currency_service.dart';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/features/backup/data/services/backup_file_service.dart';
-import 'package:expense_tracker/features/backup/domain/models/backup_failure.dart';
-import 'package:expense_tracker/features/backup/domain/repositories/backup_repository.dart';
-import 'package:expense_tracker/shared/models/app_currency.dart';
-import 'package:expense_tracker/shared/models/transaction_type.dart';
+import 'package:fynza/core/services/currency_service.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/backup/data/services/backup_file_service.dart';
+import 'package:fynza/features/backup/domain/models/backup_failure.dart';
+import 'package:fynza/features/backup/domain/repositories/backup_repository.dart';
+import 'package:fynza/shared/models/app_currency.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {
   setUpAll(() {

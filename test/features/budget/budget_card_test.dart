@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:expense_tracker/core/services/currency_service.dart';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/features/budget/presentation/widgets/budget_card.dart';
-import 'package:expense_tracker/shared/models/budget_overview.dart';
+import 'package:fynza/core/services/currency_service.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/budget/presentation/widgets/budget_card.dart';
+import 'package:fynza/shared/models/budget_overview.dart';
 
 void main() {
   group('BudgetCard Widget Tests', () {

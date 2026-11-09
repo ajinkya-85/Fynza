@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/backup/data/services/backup_validator.dart';
-import 'package:expense_tracker/features/backup/domain/models/backup_failure.dart';
+import 'package:fynza/features/backup/data/services/backup_validator.dart';
+import 'package:fynza/features/backup/domain/models/backup_failure.dart';
 
 void main() {
   group('BackupValidator Tests', () {

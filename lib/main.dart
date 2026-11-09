@@ -22,13 +22,13 @@ void main() async {
         capturePreferencesServiceProvider
             .overrideWithValue(CapturePreferencesService(prefs)),
       ],
-      child: const ExpenseTrackerApp(),
+      child: const FynzaApp(),
     ),
   );
 }
 
-class ExpenseTrackerApp extends StatelessWidget {
-  const ExpenseTrackerApp({super.key});
+class FynzaApp extends StatelessWidget {
+  const FynzaApp({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/shared/widgets/spring_progress_bar.dart';
+import 'package:fynza/shared/widgets/spring_progress_bar.dart';
 
 void main() {
   group('SpringProgressBar Widget Tests', () {

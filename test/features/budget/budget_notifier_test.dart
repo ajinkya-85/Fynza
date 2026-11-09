@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:expense_tracker/data/db/app_database.dart';
-import 'package:expense_tracker/features/budget/domain/repositories/budget_repository.dart';
-import 'package:expense_tracker/features/budget/presentation/view_models/budget_notifier.dart';
-import 'package:expense_tracker/shared/models/budget_overview.dart';
+import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/budget/domain/repositories/budget_repository.dart';
+import 'package:fynza/features/budget/presentation/view_models/budget_notifier.dart';
+import 'package:fynza/shared/models/budget_overview.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class FakeBudgetRepository implements BudgetRepository {

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/auto_capture/data/services/capture_dedupe.dart';
-import 'package:expense_tracker/shared/models/transaction_type.dart';
+import 'package:fynza/features/auto_capture/data/services/capture_dedupe.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {
   group('CaptureDedupe Tests', () {

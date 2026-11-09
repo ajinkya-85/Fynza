@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:expense_tracker/core/services/currency_service.dart';
-import 'package:expense_tracker/features/transactions/presentation/widgets/transaction_date_header.dart';
+import 'package:fynza/core/services/currency_service.dart';
+import 'package:fynza/features/transactions/presentation/widgets/transaction_date_header.dart';
 
 void main() {
   group('TransactionDateHeader Widget Tests', () {

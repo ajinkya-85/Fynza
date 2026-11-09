@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:expense_tracker/core/services/currency_service.dart';
-import 'package:expense_tracker/features/backup/domain/models/auto_backup_frequency.dart';
-import 'package:expense_tracker/features/backup/domain/repositories/backup_repository.dart';
-import 'package:expense_tracker/features/backup/presentation/views/data_and_storage_view.dart';
+import 'package:fynza/core/services/currency_service.dart';
+import 'package:fynza/features/backup/domain/models/auto_backup_frequency.dart';
+import 'package:fynza/features/backup/domain/repositories/backup_repository.dart';
+import 'package:fynza/features/backup/presentation/views/data_and_storage_view.dart';
 import 'backup_view_model_test.dart';
 
 void main() {

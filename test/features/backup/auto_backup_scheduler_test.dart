@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/backup/data/services/auto_backup_scheduler.dart';
-import 'package:expense_tracker/features/backup/domain/models/auto_backup_frequency.dart';
+import 'package:fynza/features/backup/data/services/auto_backup_scheduler.dart';
+import 'package:fynza/features/backup/domain/models/auto_backup_frequency.dart';
 
 void main() {
   group('shouldRunAutoBackup Tests', () {

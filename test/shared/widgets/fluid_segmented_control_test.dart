@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/shared/widgets/fluid_segmented_control.dart';
+import 'package:fynza/shared/widgets/fluid_segmented_control.dart';
 
 void main() {
   group('FluidSegmentedControl Widget Tests', () {

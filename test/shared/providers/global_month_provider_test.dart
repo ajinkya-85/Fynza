@@ -1,4 +1,4 @@
-import 'package:expense_tracker/shared/providers/global_month_provider.dart';
+import 'package:fynza/shared/providers/global_month_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

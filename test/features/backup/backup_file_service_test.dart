@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:expense_tracker/features/backup/data/services/backup_file_service.dart';
+import 'package:fynza/features/backup/data/services/backup_file_service.dart';
 
 void main() {
   group('BackupFileService Tests', () {

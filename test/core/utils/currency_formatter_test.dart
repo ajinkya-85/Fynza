@@ -1,5 +1,5 @@
-import 'package:expense_tracker/core/utils/currency_formatter.dart';
-import 'package:expense_tracker/shared/models/app_currency.dart';
+import 'package:fynza/core/utils/currency_formatter.dart';
+import 'package:fynza/shared/models/app_currency.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

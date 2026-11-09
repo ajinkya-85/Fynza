@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/currency_service.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../models/transaction_type.dart';
 
@@ -21,15 +22,16 @@ class MoneyText extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final currency = ref.watch(selectedCurrencyProvider);
     final baseStyle = style ?? theme.textTheme.titleMedium;
 
     Color? textColor = baseStyle?.color;
     if (type != null) {
       if (type == TransactionType.income) {
-        textColor = const Color.fromARGB(255, 46, 122, 125);
+        textColor = isDark ? const Color(0xFF81C784) : AppTheme.incomeAccent;
       } else {
-        textColor = theme.colorScheme.error;
+        textColor = isDark ? const Color(0xFFFF8A80) : AppTheme.expenseAccent;
       }
     }
 

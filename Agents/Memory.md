@@ -2,11 +2,12 @@
 
 ## Purpose
 
-Fynza is an offline-first Flutter expense tracker. It supports income and expense tracking, categories, monthly budgets, dashboard summaries, currency selection, backup/restore, and local persistence with Drift.
+Fynza is an offline-first Flutter expense tracker. It supports income and expense tracking, categories, monthly budgets, dashboard summaries, currency selection, backup/restore, auto-capture from SMS and UPI payment apps, and local persistence with Drift.
 
 ## Stack
 
 - Flutter / Dart with Material 3
+- `google_fonts: ^6.2.1` (**Poppins** typography system)
 - Riverpod (`StateNotifierProvider`) for UI state and dependency injection
 - Drift for the local relational database
 - `shared_preferences` for app settings, including currency and backup frequency
@@ -30,19 +31,57 @@ Key locations:
 
 ## Current UI and Feature State
 
-### Branding and navigation
+### Branding, Typography and Design System
 
-- The app brand is **Fynza**.
-- Main screens use a consistent Fynza AppBar treatment.
-- Main navigation includes Dashboard, Transactions, Budgets, Categories, and Settings.
-- The central transaction FAB uses `FloatingActionButtonLocation.centerFloat` to avoid overlapping the navigation bar.
+- **Brand Name**: **Fynza** (root widget: `FynzaApp`).
+- **Typography**: **Poppins** geometric font family applied globally via `google_fonts` (`AppTheme._buildOpticalTextTheme`), configured with tailored optical tracking (`-1.0` to `-0.1` for headlines/titles, `0.0` for body, `+0.1` to `+0.3` for labels) and comfortable leading.
+- **Cute Modern Finance Theme & Color Palette**:
+  - **Scaffold Background**: Warm Vanilla Oat Cream (`#FDF8F3` in light mode, `#191715` in dark mode).
+  - **Cards & Surfaces**: Cloud White (`#FFFFFF` in light mode, `#1F1D1A` in dark mode) with soft hairline borders (`#F0E7DC` / `#38332E`).
+  - **Primary & Accent Brand**: Warm Apricot / Honey Amber (`#F6A63C`).
+  - **Expense Cards**: Soft Rose Blush (`#FDECE9` / `#331D1C` dark) with warm coral text (`#D94136` / `#FF8A80` dark).
+  - **Income Cards**: Matcha Mint (`#E6F5EC` / `#162D20` dark) with forest jade text (`#238244` / `#81C784` dark).
+  - **Pastel Chart Palette**: `[#F49E8C, #7DBCE6, #C2A5E7, #F7CE72, #7FDCB8]`.
+
+### Dashboard & Financial Summary
+
+- **Friendly Greeting Header**: "Welcome back! 👋 / Financial Overview".
+- **Floating Frosted `MonthSelector`**: Apple-style floating frosted glass pill with tactile chevron buttons, haptic ticks, and directional `AnimatedSwitcher` slide transitions.
+- **Hero Net Balance Card**: Tactile card wrapped in `PressableScale` with warm amber glow, pill badge ("Net Balance" / "This Month"), and bold headline balance.
+- **Side-by-Side Summary Cards**:
+  - Left card: Soft Rose Blush (`#FDECE9`) Expense card with downward arrow circular badge and coral text.
+  - Right card: Matcha Mint (`#E6F5EC`) Income card with upward arrow circular badge and jade text.
+- **Interactive `SpendingPieChart`**: Donut chart with spring-expanded slices on touch, haptic selection clicks, dynamic center focus ("Total Spent" or selected category details), and interactive category legend with tap-to-focus.
+- **Tactile `TransactionTile`**: Squircle cards (18px radius) with instant press feedback (`PressableScale`), subtle hairline borders, and smooth list scrolling with `BouncingScrollPhysics`.
+- **`MoneyText`**: Dynamic colored text using `AppTheme.incomeAccent` and `AppTheme.expenseAccent`.
 
 ### Transactions and categories
 
 - Income uses `Icons.arrow_downward`; expenses use `Icons.arrow_upward` throughout the UI.
-- Category creation uses a dedicated full-screen form rather than an AlertDialog.
+- Category creation uses a dedicated full-screen form with tactile icon picker grid and color palette with animated glowing selection rings.
 - Category save returns silently without a success SnackBar.
 - Transaction creation and editing use `TransactionFormScreen`.
+- **Fluid Segmented Filter Bar** (`lib/shared/widgets/fluid_segmented_control.dart`): Apple-style sliding pill segmented control (`All / Expenses / Income`) with spring-animated sliding background indicator, haptic selection clicks, and instant press feedback.
+- **Tactile Search Field** (`lib/features/transactions/presentation/widgets/transaction_search_bar.dart`): Apple-style search field with subtle contrast, squircle borders, instant query response, and tactile clear interaction.
+- **Date Section Headers** (`lib/features/transactions/presentation/widgets/transaction_date_header.dart`): Grouped calendar days displaying friendly titles (`Today, Nov 5`, `Yesterday, Nov 4`) with color-coded daily net totals.
+- **Tactile Swipe Dismissal**: `Dismissible` with `HapticFeedback.mediumImpact()` triggered when swiping reaches the threshold, paired with a rounded red delete action background.
+
+### Transaction Entry Experience (`TransactionFormScreen`)
+
+- **Hero Optical Amount Display**: Centerpiece container with large display typography (`letterSpacing: -1.0`), adaptive emerald/red coloration, and inline clear button.
+- **Quick Amount Chips**: Spring-bouncing increment chips (`+50`, `+100`, `+500`, `+1,000`, `+5,000`) with instant tactile feedback.
+- **Fluid Segmented Type Control**: Fluid sliding segmented control for Expense vs Income with haptics.
+- **Tactile Category Chips**: Pressable chips with glowing color-matched halo shadows, illuminated icon badges, and selection haptics.
+- **Apple-Style Date Card & Note Input**: Tactile squircle date picker card and streamlined note textfield.
+- **Spring Submit Button**: Full-width primary action button with `PressableScale` and haptic completion feedback.
+
+### Budgets & Categories Polish
+
+- **Physics Gradient Progress Bar** (`lib/shared/widgets/spring_progress_bar.dart`): Critically damped spring-animated progress bar with adaptive health gradients (emerald $\to$ amber $\to$ crimson).
+- **Elevated `BudgetCard`**: Squircle cards with category icon badge, progress percentage / over-limit warning pills, optical amount typography, and tactile edit/delete actions.
+- **Elevated `BudgetScreen`**: Gradient hero total budget card, category count chips, and smooth bouncing physics.
+- **Tactile `BudgetFormDialog`**: Clean squircle presentation with quick amount chips (`+500`, `+1k`, `+2k`, `+5k`) and tactile save button.
+- **Elevated `CategoriesScreen`**: FluidSegmentedControl type switcher (Expenses / Income), squircle category tiles with illuminated badges and tactile delete dialogs.
 
 ### Currency
 
@@ -88,7 +127,7 @@ Key locations:
   - Bounded JSON queue (up to 500 entries) in app-private storage (`autocapture_queue.json`).
   - Thread-safe synchronized locks with atomic staging file rename on drain to avoid race conditions and data loss.
 - **Platform Channel (`AutoCapturePlugin.kt` & `NotificationCaptureService.dart`)**:
-  - Communicates via `MethodChannel("com.example.fynza/auto_capture")`.
+  - Communicates via `MethodChannel("io.fynza.app/auto_capture")`.
   - Exposes `drainQueue`, `isNotificationListenerGranted`, and `openNotificationListenerSettings`.
   - Periodically drained via `Workmanager` (`auto_capture_periodic_drain`) and catch-up drained on app launch in `MainScaffold`.
 - **Pure Dart Parser (`SmsTransactionParser.dart` & `ParserRules.dart`)**:
@@ -98,70 +137,16 @@ Key locations:
   - Evaluates confidence score (`high`, `medium`, `low`).
   - Rejects OTPs, balance queries, promotional spam, and loan offers.
 - **Cross-Source Deduplication & Duplicate Prevention (`CaptureDedupe.dart`, `CaptureDao.dart`, `CaptureRepository.dart`)**:
-  - **Exact Deduplication**: Generates deterministic SHA-256 dedupe keys based on UPI reference / transaction ID or sender + normalized text + amount. Automatically deduplicates identical incoming notifications (e.g. UPI app push + bank SMS for the same transaction) via a SQLite UNIQUE constraint with `InsertMode.insertOrIgnore`.
-  - **Possible Duplicate Detection**: Detects potential duplicates when:
-    1. A transaction with the exact same amount in cents was already logged into the `transactions` table within ±24 hours (`CaptureDao.hasMatchingLoggedTransaction`).
-    2. Multiple pending items in the same capture inbox batch share the same amount within a 24-hour window.
-  - **Duplicate Warning UI (Yellow Treatment)**:
-    - Items identified as potential duplicates are highlighted in `CaptureInboxView` with an amber/yellow border (`Colors.amber.shade700`), warm background tint (`#FFFBEB` in light mode, `Colors.amber.withAlpha(20)` in dark mode).
-    - Features a prominent warning badge: `⚠️ Possible Duplicate • A similar transaction was already recorded around this time`.
-    - Contextual action buttons update to `"Add Anyway"` and `"Dismiss Duplicate"`, allowing the user to review before deciding whether to log it or discard it.
+  - **Exact Deduplication**: Generates deterministic SHA-256 dedupe keys based on UPI reference / transaction ID or sender + normalized text + amount. Automatically deduplicates identical incoming notifications via SQLite UNIQUE constraint with `InsertMode.insertOrIgnore`.
+  - **Possible Duplicate Detection**: Detects potential duplicates within ±24 hours (`CaptureDao.hasMatchingLoggedTransaction`).
+  - **Duplicate Warning UI (Yellow Treatment)**: Highlighted in `CaptureInboxView` with amber/yellow border and warning badge (`⚠️ Possible Duplicate`).
 - **Database & DAO (`captured_transactions_table.dart`, `counterparty_rules_table.dart`, `capture_dao.dart`)**:
   - Drift schema v2 with migration strategy from v1 preserving all existing tables and data.
   - Stores status (`pending`, `confirmed`, `dismissed`) and nullable foreign key `transaction_id`.
-  - `CounterpartyRules` stores learned category mappings for merchant names.
   - Includes auto-purge for dismissed/confirmed captures older than 90 days.
 - **Capture Modes & Master Toggle**:
-  - **Master Switch**: Auto-Capture is turned **OFF by default** (opt-in privacy). Controlled via `autoCaptureEnabledProvider` backed by `CapturePreferencesService.isMasterEnabled`.
-  - When disabled:
-    - The Capture Inbox icon button is completely removed from the `DashboardScreen` AppBar.
-    - Launch queue catch-up drain in `MainScaffold` is bypassed.
-    - Any incoming notifications are dropped immediately.
-    - Settings screen Automation tile clearly displays `"Turned off"`.
-  - When enabled:
-    - The Capture Inbox icon button reactively appears in `DashboardScreen` with pending badge counts.
-    - `reviewFirst` (default mode): Captures remain in the capture inbox until user reviews and confirms them.
-    - `addAutomatically`: High-confidence debits with a known counterparty rule are immediately created as real transactions with a one-tap Undo option.
-- **UI & Navigation**:
-  - `CaptureInboxView`: Review pending captures, prefill transaction form, dismiss, undo auto-adds, or block sender. Formats amounts using the app's dynamic currency (`selectedCurrencyProvider`). Surfaces possible duplicate warnings in amber/yellow styling.
-  - `AutoCaptureSettingsView`: Master switch, mode radio group, ignored senders list, battery optimization dialog, wipe captures, and link to parser playground.
-  - `ParserPlaygroundView`: In-app tool to test and debug SMS parsing on pasted text (accessible from Settings).
-  - Dashboard badge: Dynamic inbox icon with pending count pill in `DashboardScreen` AppBar, conditionally rendered only when Auto-Capture is active.
-- **Backup & Storage Integration**:
-  - Handled in `BackupDto`, `BackupSerializer`, and `BackupValidator` with backward-compatible optional `capturedTransactions` section.
-  - Deleted prior to transactions during restore to respect foreign key constraints.
-
-### Apple-Grade Fluid Motion & Design System (Phases 1, 2, 3, 4 & 5 Completed)
-- **Phase 1: Motion Primitives & Theming**:
-  - `SpringCurves` (`lib/core/theme/spring_curves.dart`): Curated critically damped springs ($\zeta = 1.0$), snappy springs, momentum flick springs ($\zeta \approx 0.8$), and cubic curves.
-  - `PressableScale` (`lib/shared/widgets/pressable_scale.dart`): Reusable touch-down interactive wrapper that scales down instantly (`0.975x`) on raw pointer down, triggers synchronized haptics, smoothly cancels on drag-away, and handles reduced-motion accessibility.
-  - `FrostedContainer` (`lib/shared/widgets/frosted_container.dart`): Apple-style translucent blur (`BackdropFilter`) with light/dark adaptive tints and light-catching 1px borders.
-  - Optical Typography (`lib/core/theme/app_theme.dart`): Negative tracking on display/headline figures (`-1.0` to `-0.2`), comfortable leading on body text, and slightly positive tracking on small labels.
-- **Phase 2: Dashboard Experience**:
-  - **Floating Frosted `MonthSelector`**: Apple-style floating frosted glass pill with tactile chevron buttons, haptic ticks, and directional `AnimatedSwitcher` slide transitions.
-  - **Elevated `SummaryCards`**: Interactive cards wrapped in `PressableScale` with vibrant primary gradients, subtle depth shadow, and optical display typography.
-  - **Interactive `SpendingPieChart`**: Spring-expanded chart slices on touch, haptic clicks, animated center focus showing selected category details, and interactive legend rows with tap-to-focus.
-  - **Tactile `TransactionTile`**: Squircle cards with instant press feedback (`PressableScale`), subtle light-catching borders, and smooth list scrolling with `BouncingScrollPhysics`.
-- **Phase 3: Transactions Screen, Search & Date Grouping**:
-  - **Fluid Segmented Filter Bar** (`lib/shared/widgets/fluid_segmented_control.dart`): Apple-style sliding pill segmented control (`All / Expenses / Income`) with spring-animated sliding background indicator, haptic selection clicks, and instant press feedback.
-  - **Tactile Search Field** (`lib/features/transactions/presentation/widgets/transaction_search_bar.dart`): Apple-style search field with subtle contrast, squircle borders, instant query response, and tactile clear interaction.
-  - **Date Section Headers** (`lib/features/transactions/presentation/widgets/transaction_date_header.dart`): Grouped calendar days displaying friendly titles (`Today, Nov 5`, `Yesterday, Nov 4`) with color-coded daily net totals (`-$45.00` / `+$2,500.00`).
-  - **Tactile Swipe Dismissal**: `Dismissible` with `HapticFeedback.mediumImpact()` triggered when swiping reaches the threshold, paired with a rounded red delete action background.
-  - **EmptyState Polish**: Responsive scrolling empty states that prevent overflow on small viewports and keyboards.
-- **Phase 4: Transaction Entry Experience (`TransactionFormScreen`)**:
-  - **Hero Optical Amount Display**: Centerpiece container with large display typography (`letterSpacing: -1.0`), adaptive emerald/red coloration, and inline clear button.
-  - **Quick Amount Chips**: Spring-bouncing increment chips (`+50`, `+100`, `+500`, `+1,000`, `+5,000`) with instant tactile feedback.
-  - **Fluid Segmented Type Control**: Fluid sliding segmented control for Expense vs Income with haptics.
-  - **Tactile Category Chips**: Pressable chips with glowing color-matched halo shadows, illuminated icon badges, and selection haptics.
-  - **Apple-Style Date Card & Note Input**: Tactile squircle date picker card and streamlined note textfield.
-  - **Spring Submit Button**: Full-width primary action button with `PressableScale` and haptic completion feedback.
-- **Phase 5: Budgets & Categories Polish**:
-  - **Physics Gradient Progress Bar** (`lib/shared/widgets/spring_progress_bar.dart`): Critically damped spring-animated progress bar with adaptive health gradients (emerald $\to$ amber $\to$ crimson).
-  - **Elevated `BudgetCard`**: Squircle cards with category icon badge, progress percentage / over-limit warning pills, optical amount typography, and tactile edit/delete actions.
-  - **Elevated `BudgetScreen`**: Gradient hero total budget card, category count chips, and smooth bouncing physics.
-  - **Tactile `BudgetFormDialog`**: Clean squircle presentation with quick amount chips (`+500`, `+1k`, `+2k`, `+5k`) and tactile save button.
-  - **Elevated `CategoriesScreen`**: FluidSegmentedControl type switcher (Expenses / Income), squircle category tiles with illuminated badges and tactile delete dialogs.
-  - **Interactive `CategoryFormScreen`**: Tactile icon picker grid and color palette with animated glowing selection rings and haptics.
+  - Master switch OFF by default (opt-in privacy). Controlled via `autoCaptureEnabledProvider`.
+  - Modes: `reviewFirst` (default) and `addAutomatically`.
 
 ## Application Branding & Package Information
 
@@ -178,13 +163,23 @@ Key locations:
 - Root `android/build.gradle.kts` overrides subproject `compileSdk = 36` in an `afterEvaluate` hook to satisfy plugin requirements.
 - Native build verified with `flutter build apk --debug`.
 
+## CI/CD Workflow
+
+- Continuous Integration configured via `.github/workflows/ci.yml`.
+- Triggers on push and pull requests to `main` and `master`.
+- Automated steps:
+  1. Sets up Java 17 and Flutter stable with pub cache.
+  2. Runs `flutter analyze` across all codebase and tests.
+  3. Runs all 109+ tests via `flutter test`.
+  4. Builds debug APK (`flutter build apk --debug`) and uploads artifact.
+
 ## Architecture & Rule Compliance
 
 - **Pattern**: Strict Feature-First MVVM (`View → ViewModel → Repository → Service`).
 - **Layer Boundary Guarantee**: Zero views import or communicate with repositories, DAOs, or database classes directly. Views talk exclusively to their ViewModels.
 - **Data Integrity**: All money values are strictly integer cents (`int`), with zero floating-point conversions.
 - **Drift Database**: Schema v2 with atomic `MigrationStrategy(onUpgrade: ...)` preserving all existing data; DAOs are feature-scoped; all UI data binding uses reactive `.watch()` streams.
-- **Material 3 & Apple Fluid Design**: Centralized dynamic theming via `AppTheme`, zero hardcoded colors, full dark/light mode support, and modern components (`NavigationBar`, `FilledButton`, `RadioGroup`). Interactive elements incorporate Apple-grade fluid motion principles: instant touch-down press feedback (`PressableScale`), critically damped springs, multi-modal haptics, frosted glass translucency, rubber-band overscroll, and optical typography tracking.
+- **Material 3 & Apple Fluid Design**: Centralized dynamic theming via `AppTheme`, zero hardcoded colors, full dark/light mode support. Interactive elements incorporate Apple-grade fluid motion principles: instant touch-down press feedback (`PressableScale`), critically damped springs, multi-modal haptics, frosted glass translucency, rubber-band overscroll, and optical typography tracking.
 
 ## Build & Test Commands
 
@@ -197,4 +192,3 @@ flutter build apk --debug
 ```
 
 *Status: 109/109 tests passing; 0 analyzer issues.*
-

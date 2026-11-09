@@ -4,13 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/currency_service.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/spring_curves.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/models/category_spending.dart';
 import '../../../../shared/widgets/category_icon.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 
-/// Apple-style interactive spending breakdown chart featuring spring slice expansions,
+/// Modern cute finance interactive spending breakdown chart featuring spring slice expansions,
 /// tactile selection haptics, dynamic center focus, and interactive legend rows.
 class SpendingPieChart extends ConsumerStatefulWidget {
   final List<CategorySpending> spendings;
@@ -46,17 +47,29 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
     final isDark = theme.brightness == Brightness.dark;
     final currency = ref.watch(selectedCurrencyProvider);
 
+    final cardBg = isDark
+        ? theme.colorScheme.surfaceContainerLow
+        : AppTheme.cardWhite;
+    final cardBorder = isDark
+        ? theme.colorScheme.outlineVariant.withValues(alpha: 0.25)
+        : AppTheme.borderCream;
+
     if (widget.spendings.isEmpty || widget.totalExpenseCents <= 0) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark
-                ? theme.colorScheme.outlineVariant.withValues(alpha: 0.2)
-                : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-          ),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: cardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : AppTheme.primaryAmber.withValues(alpha: 0.05),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Center(
           child: Column(
@@ -64,20 +77,27 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                  color: (isDark
+                          ? theme.colorScheme.surfaceContainerHighest
+                          : AppTheme.scaffoldCream)
+                      .withValues(alpha: 0.8),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.donut_large_rounded,
                   size: 32,
-                  color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  color: isDark
+                      ? theme.colorScheme.onSurfaceVariant
+                      : AppTheme.textTaupe.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 'No spending recorded for this month',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                  color: isDark
+                      ? theme.colorScheme.onSurfaceVariant
+                      : AppTheme.textTaupe,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -104,11 +124,17 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
         radius: radius,
         badgeWidget: isTouched
             ? Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 4,
+                    ),
+                  ],
                 ),
               )
             : null,
@@ -118,13 +144,18 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark
-              ? theme.colorScheme.outlineVariant.withValues(alpha: 0.2)
-              : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-        ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.2)
+                : AppTheme.primaryAmber.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,13 +166,17 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
               Text(
                 'Spending Breakdown',
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: -0.2,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.3,
                 ),
               ),
               if (hasSelection)
                 TextButton(
                   onPressed: () => _onSectionTouched(-1),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.primaryAmber,
+                    visualDensity: VisualDensity.compact,
+                  ),
                   child: const Text('Reset'),
                 ),
             ],
@@ -186,7 +221,9 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
                             Text(
                               selectedItem.category.name,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: isDark
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : AppTheme.textTaupe,
                                 fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
@@ -199,7 +236,7 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
                                 currency,
                               ),
                               style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -212,7 +249,10 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
                             Text(
                               'Total Spent',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: isDark
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : AppTheme.textTaupe,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -222,7 +262,7 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
                                 currency,
                               ),
                               style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w800,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -238,7 +278,12 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: widget.spendings.length,
-            separatorBuilder: (_, _) => const Divider(height: 10),
+            separatorBuilder: (_, _) => Divider(
+              height: 12,
+              color: isDark
+                  ? theme.colorScheme.outlineVariant.withValues(alpha: 0.15)
+                  : AppTheme.borderCream.withValues(alpha: 0.7),
+            ),
             itemBuilder: (context, index) {
               final item = widget.spendings[index];
               final isSelected = index == _touchedIndex;
@@ -251,26 +296,28 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
                   _onSectionTouched(isSelected ? -1 : index);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
+                        ? AppTheme.primaryAmber
+                            .withValues(alpha: isDark ? 0.22 : 0.12)
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     children: [
                       CategoryIcon(
                         iconKey: item.category.icon,
                         colorValue: item.category.color,
-                        size: 32,
+                        size: 34,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           item.category.name,
                           style: TextStyle(
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                            fontWeight:
+                                isSelected ? FontWeight.w700 : FontWeight.w500,
                             letterSpacing: -0.1,
                           ),
                         ),
@@ -278,15 +325,19 @@ class _SpendingPieChartState extends ConsumerState<SpendingPieChart> {
                       Text(
                         '${percentage.toStringAsFixed(1)}%',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isDark
+                              ? theme.colorScheme.onSurfaceVariant
+                              : AppTheme.textTaupe,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
                         CurrencyFormatter.formatCents(item.totalCents, currency),
                         style: TextStyle(
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.bold,
+                          fontWeight:
+                              isSelected ? FontWeight.w800 : FontWeight.bold,
                           letterSpacing: -0.2,
                         ),
                       ),

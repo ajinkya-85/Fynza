@@ -217,8 +217,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                         ValueListenableBuilder<TextEditingValue>(
                           valueListenable: _amountController,
                           builder: (context, value, _) {
-                            if (value.text.isEmpty)
+                            if (value.text.isEmpty) {
                               return const SizedBox.shrink();
+                            }
                             return PressableScale(
                               targetScale: 0.85,
                               enableHaptics: false,

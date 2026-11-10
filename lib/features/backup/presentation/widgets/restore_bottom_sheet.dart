@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../data/services/backup_file_service.dart';
+import '../../domain/models/backup_file_info.dart';
 
 class RestoreBottomSheet extends StatelessWidget {
   final List<BackupFileInfo> autoBackups;
@@ -44,7 +44,9 @@ class RestoreBottomSheet extends StatelessWidget {
               height: 4,
               width: 36,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.4,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -54,7 +56,9 @@ class RestoreBottomSheet extends StatelessWidget {
                 children: [
                   Text(
                     'Restore Backup',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -71,7 +75,10 @@ class RestoreBottomSheet extends StatelessWidget {
                         color: theme.colorScheme.primaryContainer,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.file_open_outlined, color: theme.colorScheme.primary),
+                      child: Icon(
+                        Icons.file_open_outlined,
+                        color: theme.colorScheme.primary,
+                      ),
                     ),
                     title: const Text('Choose a file...'),
                     subtitle: const Text('Browse device or cloud storage'),
@@ -107,7 +114,9 @@ class RestoreBottomSheet extends StatelessWidget {
                     )
                   else
                     ...autoBackups.map((info) {
-                      final dateStr = DateFormat.yMMMd().add_jm().format(info.modifiedAt);
+                      final dateStr = DateFormat.yMMMd().add_jm().format(
+                        info.modifiedAt,
+                      );
                       final sizeStr = _formatFileSize(info.sizeBytes);
 
                       return ListTile(
@@ -115,11 +124,14 @@ class RestoreBottomSheet extends StatelessWidget {
                           Icons.history_rounded,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        title: Text(dateStr, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        title: Text(
+                          dateStr,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
                         subtitle: Text('$sizeStr • ${info.name}'),
                         onTap: () {
                           Navigator.of(context).pop();
-                          onSelectAutoBackup(info.file);
+                          onSelectAutoBackup(File(info.path));
                         },
                         trailing: PopupMenuButton<String>(
                           icon: const Icon(Icons.more_vert),
@@ -127,13 +139,13 @@ class RestoreBottomSheet extends StatelessWidget {
                             switch (value) {
                               case 'restore':
                                 Navigator.of(context).pop();
-                                onSelectAutoBackup(info.file);
+                                onSelectAutoBackup(File(info.path));
                                 break;
                               case 'share':
-                                onShareAutoBackup(info.file);
+                                onShareAutoBackup(File(info.path));
                                 break;
                               case 'delete':
-                                onDeleteAutoBackup(info.file);
+                                onDeleteAutoBackup(File(info.path));
                                 break;
                             }
                           },
@@ -164,7 +176,10 @@ class RestoreBottomSheet extends StatelessWidget {
                                 children: [
                                   Icon(Icons.delete_outline, color: Colors.red),
                                   SizedBox(width: 8),
-                                  Text('Delete', style: TextStyle(color: Colors.red)),
+                                  Text(
+                                    'Delete',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
                                 ],
                               ),
                             ),

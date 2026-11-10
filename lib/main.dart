@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/services/currency_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/capture_constants.dart';
+import 'core/di/database_provider.dart';
 import 'features/auto_capture/data/services/capture_preferences_service.dart';
 import 'features/auto_capture/data/services/auto_capture_scheduler.dart';
 import 'features/backup/data/services/auto_backup_scheduler.dart';

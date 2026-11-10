@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/capture_constants.dart';
-import '../../../auto_capture/data/services/auto_capture_scheduler.dart';
-import '../../../auto_capture/data/services/capture_preferences_service.dart';
-import '../../../backup/data/services/auto_backup_scheduler.dart';
-import '../../../backup/domain/repositories/backup_repository.dart';
+import '../../../../core/di/database_provider.dart';
 import '../../../dashboard/presentation/views/dashboard_screen.dart';
 import '../../../settings/presentation/views/settings_screen.dart';
 import '../../../transactions/presentation/views/transactions_screen.dart';
@@ -25,12 +21,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(autoBackupSchedulerProvider).runLaunchCatchUp(
-            ref.read(backupRepositoryProvider),
+      ref
+          .read(appStartupCoordinatorProvider)
+          .runLaunchTasks(
+            autoCaptureEnabled: ref.read(autoCaptureEnabledProvider),
           );
-      if (CaptureConstants.isEnabled && ref.read(autoCaptureEnabledProvider)) {
-        ref.read(autoCaptureSchedulerProvider).drainNow();
-      }
     });
   }
 
@@ -45,10 +40,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: screens),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'main_fab',
         tooltip: 'Add transaction',

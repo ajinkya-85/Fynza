@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/categories/domain/models/category.dart';
+import 'package:fynza/features/transactions/domain/models/transaction.dart';
 import 'package:fynza/features/transactions/domain/repositories/transaction_repository.dart';
 import 'package:fynza/features/transactions/presentation/view_models/transaction_form_notifier.dart';
 import 'package:fynza/features/transactions/presentation/view_models/transactions_notifier.dart';
@@ -28,16 +29,18 @@ class FakeTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Stream<List<TransactionWithCategory>> watchRecentTransactions({int limit = 5}) {
+  Stream<List<TransactionWithCategory>> watchRecentTransactions({
+    int limit = 5,
+  }) {
     return _controller.stream;
   }
 
   @override
   Future<TransactionWithCategory?> getTransaction(int id) async {
     return items.cast<TransactionWithCategory?>().firstWhere(
-          (t) => t?.transaction.id == id,
-          orElse: () => null,
-        );
+      (t) => t?.transaction.id == id,
+      orElse: () => null,
+    );
   }
 
   @override

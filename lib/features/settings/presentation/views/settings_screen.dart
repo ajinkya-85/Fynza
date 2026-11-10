@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/capture_constants.dart';
 import '../../../../core/services/currency_service.dart';
 import '../../../../shared/models/app_currency.dart';
-import '../../../auto_capture/data/services/capture_preferences_service.dart';
+import '../../../../core/di/database_provider.dart';
 import '../../../auto_capture/presentation/views/auto_capture_settings_view.dart';
 import '../../../backup/presentation/views/data_and_storage_view.dart';
 
@@ -26,10 +26,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final customNotifier = ref.read(customCurrencyProvider.notifier);
 
     // Effective display values — use custom details when 'Other' is active
-    final badgeSymbol = selectedCurrency == AppCurrency.custom && customDetails != null
+    final badgeSymbol =
+        selectedCurrency == AppCurrency.custom && customDetails != null
         ? customDetails.symbol
         : selectedCurrency.symbol;
-    final badgeCode = selectedCurrency == AppCurrency.custom && customDetails != null
+    final badgeCode =
+        selectedCurrency == AppCurrency.custom && customDetails != null
         ? customDetails.code
         : selectedCurrency.code;
 
@@ -38,16 +40,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.account_balance_wallet_rounded,
-                color: theme.colorScheme.primary),
+            Icon(
+              Icons.account_balance_wallet_rounded,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 8),
             Text(
               'Fynza',
               style: theme.textTheme.titleLarge?.copyWith(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                  ),
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+              ),
             ),
           ],
         ),
@@ -73,135 +77,148 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // Header row with icon, label, and current badge
                     Row(
                       children: [
-                      Icon(
-                        Icons.currency_exchange_outlined,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        'Currency',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        Icon(
+                          Icons.currency_exchange_outlined,
+                          color: theme.colorScheme.primary,
                         ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '$badgeSymbol  $badgeCode',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
+                        const SizedBox(width: 12),
+                        Text(
+                          'Currency',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        _isCurrencyExpanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '$badgeSymbol  $badgeCode',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _isCurrencyExpanded
+                              ? Icons.keyboard_arrow_up_rounded
+                              : Icons.keyboard_arrow_down_rounded,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
 
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    alignment: Alignment.topCenter,
-                    child: _isCurrencyExpanded
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 12),
-                              Text(
-                                'Choose the currency used throughout the app',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      alignment: Alignment.topCenter,
+                      child: _isCurrencyExpanded
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Choose the currency used throughout the app',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              // Grid of currency chips
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                    children: AppCurrency.values.map((currency) {
-                      final isSelected = currency == selectedCurrency;
-                      final isCustom = currency == AppCurrency.custom;
+                                const SizedBox(height: 16),
+                                // Grid of currency chips
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: AppCurrency.values.map((currency) {
+                                    final isSelected =
+                                        currency == selectedCurrency;
+                                    final isCustom =
+                                        currency == AppCurrency.custom;
 
-                      String displaySymbol = currency.symbol;
-                      String displayCode = currency.code;
-                      IconData? overrideIcon;
+                                    String displaySymbol = currency.symbol;
+                                    String displayCode = currency.code;
+                                    IconData? overrideIcon;
 
-                      if (isCustom) {
-                        if (customDetails != null) {
-                          displaySymbol = customDetails.symbol;
-                          displayCode = customDetails.code;
-                        } else {
-                          displaySymbol = '?';
-                          displayCode = 'OTHER';
-                          overrideIcon = Icons.edit_rounded;
-                        }
-                      }
+                                    if (isCustom) {
+                                      if (customDetails != null) {
+                                        displaySymbol = customDetails.symbol;
+                                        displayCode = customDetails.code;
+                                      } else {
+                                        displaySymbol = '?';
+                                        displayCode = 'OTHER';
+                                        overrideIcon = Icons.edit_rounded;
+                                      }
+                                    }
 
-                      return _CurrencyChip(
-                        symbol: displaySymbol,
-                        code: displayCode,
-                        icon: overrideIcon,
-                        isSelected: isSelected,
-                        onTap: () {
-                          if (isCustom) {
-                            _showCustomCurrencyDialog(
-                              context,
-                              currentDetails: customDetails,
-                              onSave: (details) async {
-                                await customNotifier.setDetails(details);
-                                await currencyNotifier
-                                    .setCurrency(AppCurrency.custom);
-                                setState(() {
-                                  _isCurrencyExpanded = false;
-                                });
-                              },
-                              onDelete: () async {
-                                await customNotifier.clearDetails();
-                                await currencyNotifier
-                                    .setCurrency(AppCurrency.usd);
-                                setState(() {
-                                  _isCurrencyExpanded = false;
-                                });
-                              },
-                            );
-                          } else {
-                            currencyNotifier.setCurrency(currency);
-                            setState(() {
-                              _isCurrencyExpanded = false;
-                            });
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                            ],
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
+                                    return _CurrencyChip(
+                                      symbol: displaySymbol,
+                                      code: displayCode,
+                                      icon: overrideIcon,
+                                      isSelected: isSelected,
+                                      onTap: () {
+                                        if (isCustom) {
+                                          _showCustomCurrencyDialog(
+                                            context,
+                                            currentDetails: customDetails,
+                                            onSave: (details) async {
+                                              await customNotifier.setDetails(
+                                                details,
+                                              );
+                                              await currencyNotifier
+                                                  .setCurrency(
+                                                    AppCurrency.custom,
+                                                  );
+                                              setState(() {
+                                                _isCurrencyExpanded = false;
+                                              });
+                                            },
+                                            onDelete: () async {
+                                              await customNotifier
+                                                  .clearDetails();
+                                              await currencyNotifier
+                                                  .setCurrency(AppCurrency.usd);
+                                              setState(() {
+                                                _isCurrencyExpanded = false;
+                                              });
+                                            },
+                                          );
+                                        } else {
+                                          currencyNotifier.setCurrency(
+                                            currency,
+                                          );
+                                          setState(() {
+                                            _isCurrencyExpanded = false;
+                                          });
+                                        }
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
+          const SizedBox(height: 16),
           const _SectionHeader(label: 'Data & Storage'),
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: ListTile(
-              leading: Icon(Icons.storage_rounded,
-                  color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.storage_rounded,
+                color: theme.colorScheme.primary,
+              ),
               title: const Text('Data and storage'),
               subtitle: const Text('Backup, restore, and automatic backups'),
               trailing: const Icon(Icons.chevron_right),
@@ -220,8 +237,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: ListTile(
-                leading: Icon(Icons.sms_outlined,
-                    color: theme.colorScheme.primary),
+                leading: Icon(
+                  Icons.sms_outlined,
+                  color: theme.colorScheme.primary,
+                ),
                 title: const Text('Auto-capture transactions'),
                 subtitle: Text(
                   ref.watch(autoCaptureEnabledProvider)
@@ -244,8 +263,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: ListTile(
-              leading: Icon(Icons.info_outline,
-                  color: theme.colorScheme.primary),
+              leading: Icon(
+                Icons.info_outline,
+                color: theme.colorScheme.primary,
+              ),
               title: const Text('Fynza'),
               subtitle: const Text('Expense tracker — v1.0.0'),
             ),
@@ -387,7 +408,10 @@ void _showCustomCurrencyDialog(
                     ),
                     child: const Text(
                       'Save Currency',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -461,8 +485,9 @@ class _CurrencyChip extends StatelessWidget {
     final bgColor = isSelected
         ? theme.colorScheme.primaryContainer
         : theme.colorScheme.surfaceContainerHighest;
-    final borderColor =
-        isSelected ? theme.colorScheme.primary : Colors.transparent;
+    final borderColor = isSelected
+        ? theme.colorScheme.primary
+        : Colors.transparent;
     final fgColor = isSelected
         ? theme.colorScheme.onPrimaryContainer
         : theme.colorScheme.onSurfaceVariant;

@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -9,9 +8,12 @@ import '../../../../data/db/app_database.dart';
 import '../../../auto_capture/data/services/auto_capture_scheduler.dart';
 import '../../../auto_capture/data/services/capture_preferences_service.dart';
 import '../../../auto_capture/data/services/notification_capture_service.dart';
-import '../../../auto_capture/domain/repositories/capture_repository.dart';
+import '../../../auto_capture/data/repositories/capture_repository_impl.dart';
+
+import '../repositories/backup_repository_impl.dart';
 import '../../domain/models/auto_backup_frequency.dart';
 import '../../domain/repositories/backup_repository.dart';
+import '../../domain/services/backup_services.dart';
 import 'backup_file_service.dart';
 import 'backup_preferences_service.dart';
 
@@ -91,7 +93,7 @@ void callbackDispatcher() {
   });
 }
 
-class AutoBackupScheduler {
+class AutoBackupScheduler implements BackupScheduleController {
   final Workmanager _workmanager;
   final BackupPreferencesService _prefsService;
 
@@ -108,6 +110,7 @@ class AutoBackupScheduler {
   }
 
   /// Updates the periodic work schedule when frequency is changed.
+  @override
   Future<void> updateSchedule(AutoBackupFrequency frequency) async {
     await _prefsService.setFrequency(frequency);
 
@@ -144,8 +147,3 @@ class AutoBackupScheduler {
     }
   }
 }
-
-final autoBackupSchedulerProvider = Provider<AutoBackupScheduler>((ref) {
-  final prefsService = ref.watch(backupPreferencesServiceProvider);
-  return AutoBackupScheduler(prefsService);
-});

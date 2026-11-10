@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fynza/data/db/app_database.dart';
 import 'package:fynza/features/auto_capture/data/services/capture_preferences_service.dart';
+import 'package:fynza/features/auto_capture/data/repositories/capture_repository_impl.dart';
 import 'package:fynza/features/auto_capture/domain/models/capture_status.dart';
 import 'package:fynza/features/auto_capture/domain/models/raw_notification.dart';
-import 'package:fynza/features/auto_capture/domain/repositories/capture_repository.dart';
 import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {

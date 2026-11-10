@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/services/auto_capture_scheduler.dart';
-import '../../data/services/notification_capture_service.dart';
+import '../../../../core/di/database_provider.dart';
 import '../../domain/models/capture_item.dart';
 import '../../domain/models/raw_notification.dart';
 import '../../domain/repositories/capture_repository.dart';
+import '../../domain/services/capture_services.dart';
 
 class CaptureInboxState {
   final List<CaptureItem> pendingItems;
@@ -42,17 +42,14 @@ class CaptureInboxState {
 
 class CaptureInboxViewModel extends StateNotifier<CaptureInboxState> {
   final CaptureRepository _repository;
-  final NotificationCaptureService _captureService;
-  final AutoCaptureScheduler _scheduler;
+  final CapturePermissionService _captureService;
+  final CaptureQueueDrainer _scheduler;
 
   StreamSubscription<List<CaptureItem>>? _pendingSub;
   StreamSubscription<List<CaptureItem>>? _autoAddedSub;
 
-  CaptureInboxViewModel(
-    this._repository,
-    this._captureService,
-    this._scheduler,
-  ) : super(const CaptureInboxState(isLoading: true)) {
+  CaptureInboxViewModel(this._repository, this._captureService, this._scheduler)
+    : super(const CaptureInboxState(isLoading: true)) {
     _init();
   }
 
@@ -62,16 +59,16 @@ class CaptureInboxViewModel extends StateNotifier<CaptureInboxState> {
         state = state.copyWith(pendingItems: items, isLoading: false);
       },
       onError: (e) {
-        state = state.copyWith(errorMessage: 'Failed to load inbox items', isLoading: false);
+        state = state.copyWith(
+          errorMessage: 'Failed to load inbox items',
+          isLoading: false,
+        );
       },
     );
 
-    _autoAddedSub = _repository.watchRecentlyAutoAdded().listen(
-      (items) {
-        state = state.copyWith(recentlyAutoAdded: items);
-      },
-      onError: (_) {},
-    );
+    _autoAddedSub = _repository.watchRecentlyAutoAdded().listen((items) {
+      state = state.copyWith(recentlyAutoAdded: items);
+    }, onError: (_) {});
 
     checkPermission();
     drain();
@@ -127,15 +124,16 @@ class CaptureInboxViewModel extends StateNotifier<CaptureInboxState> {
 }
 
 final captureInboxViewModelProvider =
-    StateNotifierProvider.autoDispose<CaptureInboxViewModel, CaptureInboxState>((ref) {
-  final repo = ref.watch(captureRepositoryProvider);
-  final captureService = ref.watch(notificationCaptureServiceProvider);
-  final scheduler = ref.watch(autoCaptureSchedulerProvider);
-  return CaptureInboxViewModel(repo, captureService, scheduler);
-});
+    StateNotifierProvider.autoDispose<CaptureInboxViewModel, CaptureInboxState>(
+      (ref) {
+        final repo = ref.watch(captureRepositoryProvider);
+        final captureService = ref.watch(notificationCaptureServiceProvider);
+        final scheduler = ref.watch(autoCaptureSchedulerProvider);
+        return CaptureInboxViewModel(repo, captureService, scheduler);
+      },
+    );
 
 final pendingCaptureCountProvider = StreamProvider.autoDispose<int>((ref) {
   final repo = ref.watch(captureRepositoryProvider);
   return repo.watchPendingCount();
 });
-

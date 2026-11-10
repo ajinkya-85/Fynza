@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/budget/domain/models/budget.dart';
+import 'package:fynza/features/categories/domain/models/category.dart';
 import 'package:fynza/features/budget/domain/repositories/budget_repository.dart';
 import 'package:fynza/features/budget/presentation/view_models/budget_notifier.dart';
 import 'package:fynza/shared/models/budget_overview.dart';
@@ -29,10 +30,12 @@ class FakeBudgetRepository implements BudgetRepository {
     required int year,
   }) async {
     return items
-        .where((b) =>
-            b.budget.categoryId == categoryId &&
-            b.budget.month == month &&
-            b.budget.year == year)
+        .where(
+          (b) =>
+              b.budget.categoryId == categoryId &&
+              b.budget.month == month &&
+              b.budget.year == year,
+        )
         .map((b) => b.budget)
         .firstOrNull;
   }
@@ -44,10 +47,12 @@ class FakeBudgetRepository implements BudgetRepository {
     required int month,
     required int year,
   }) async {
-    items.removeWhere((b) =>
-        b.budget.categoryId == categoryId &&
-        b.budget.month == month &&
-        b.budget.year == year);
+    items.removeWhere(
+      (b) =>
+          b.budget.categoryId == categoryId &&
+          b.budget.month == month &&
+          b.budget.year == year,
+    );
 
     final b = BudgetOverview(
       budget: Budget(

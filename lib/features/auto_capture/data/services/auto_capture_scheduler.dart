@@ -1,16 +1,16 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'capture_preferences_service.dart';
 import '../../domain/repositories/capture_repository.dart';
 import 'notification_capture_service.dart';
+import '../../domain/services/capture_services.dart';
 
 const String autoCaptureTaskName = 'expense_tracker_auto_capture';
 const String autoCaptureTaskType = 'auto_capture_periodic';
 
-class AutoCaptureScheduler {
+class AutoCaptureScheduler implements CaptureQueueDrainer {
   final NotificationCaptureService _captureService;
   final CaptureRepository _repository;
   final CapturePreferencesService preferences;
@@ -29,6 +29,7 @@ class AutoCaptureScheduler {
   }
 
   /// Drains pending notifications immediately and ingests them.
+  @override
   Future<void> drainNow() async {
     if (!Platform.isAndroid || !preferences.isMasterEnabled()) return;
 
@@ -59,14 +60,3 @@ class AutoCaptureScheduler {
     }
   }
 }
-
-final autoCaptureSchedulerProvider = Provider<AutoCaptureScheduler>((ref) {
-  final captureService = ref.watch(notificationCaptureServiceProvider);
-  final repository = ref.watch(captureRepositoryProvider);
-  final preferences = ref.watch(capturePreferencesServiceProvider);
-  return AutoCaptureScheduler(
-    captureService,
-    repository,
-    preferences: preferences,
-  );
-});

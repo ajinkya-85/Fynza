@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/category_palette.dart';
 
 class CategoryIcon extends StatelessWidget {
   final String iconKey;
@@ -76,22 +77,7 @@ class CategoryIcon extends StatelessWidget {
     MapEntry('local_gas_station', Icons.local_gas_station),
   ];
 
-  static const List<int> availableColors = [
-    0xFFE65100, // Deep Orange
-    0xFF2E7D32, // Dark Green
-    0xFF0277BD, // Light Blue
-    0xFF7B1FA2, // Purple
-    0xFFC62828, // Red
-    0xFFAD1457, // Pink
-    0xFF00695C, // Teal
-    0xFFF57F17, // Amber
-    0xFF1B5E20, // Green
-    0xFF283593, // Indigo
-    0xFF00838F, // Cyan
-    0xFFD84315, // Orange
-    0xFF4E342E, // Brown
-    0xFF37474F, // Blue Grey
-  ];
+  static const List<int> availableColors = CategoryPalette.colors;
 
   @override
   Widget build(BuildContext context) {
@@ -105,11 +91,7 @@ class CategoryIcon extends StatelessWidget {
         shape: BoxShape.circle,
       ),
       child: Center(
-        child: Icon(
-          getIconData(iconKey),
-          color: color,
-          size: size * 0.55,
-        ),
+        child: Icon(getIconData(iconKey), color: color, size: size * 0.55),
       ),
     );
   }

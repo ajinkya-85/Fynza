@@ -1,17 +1,21 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:fynza/core/services/currency_service.dart';
 import 'package:fynza/features/backup/data/services/auto_backup_scheduler.dart';
-import 'package:fynza/features/backup/data/services/backup_file_service.dart';
 import 'package:fynza/features/backup/data/services/backup_preferences_service.dart';
 import 'package:fynza/features/backup/domain/models/auto_backup_frequency.dart';
+import 'package:fynza/features/backup/domain/models/backup_file_info.dart';
 import 'package:fynza/features/backup/domain/models/backup_failure.dart';
 import 'package:fynza/features/backup/domain/models/backup_summary.dart';
 import 'package:fynza/features/backup/domain/repositories/backup_repository.dart';
 import 'package:fynza/features/backup/presentation/view_models/backup_view_model.dart';
+import 'package:fynza/features/backup/domain/services/backup_services.dart';
+
+class FakeBackupFileNameGenerator implements BackupFileNameGenerator {
+  @override
+  String generateManualFileName([DateTime? time]) => 'backup.expbak';
+}
 
 class FakeBackupRepository implements BackupRepository {
   bool shouldFailRestore = false;
@@ -39,19 +43,17 @@ class FakeBackupRepository implements BackupRepository {
   }
 
   @override
-  Future<void> restoreBackup(Uint8List bytes, {required CurrencyService currencyService}) async {
+  Future<void> restoreBackup(Uint8List bytes) async {
     if (shouldFailRestore) {
       throw const CorruptDataFailure('Invalid data in backup');
     }
   }
 
   @override
-  Future<File> createAutoBackup({String appVersion = '1.0.0'}) async {
-    return File('dummy.expbak');
-  }
+  Future<void> createAutoBackup({String appVersion = '1.0.0'}) async {}
 
   @override
-  Future<void> deleteBackupFile(File file) async {}
+  Future<void> deleteBackupFile(String path) async {}
 
   @override
   Future<String> getBackupDirectoryPath() async => '/mock/backups';
@@ -68,7 +70,6 @@ void main() {
   group('BackupViewModel Tests', () {
     late FakeBackupRepository fakeRepo;
     late BackupPreferencesService prefsService;
-    late CurrencyService currencyService;
     late AutoBackupScheduler scheduler;
     late BackupViewModel viewModel;
 
@@ -76,7 +77,6 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       prefsService = BackupPreferencesService(prefs);
-      currencyService = CurrencyService(prefs);
       fakeRepo = FakeBackupRepository();
       scheduler = AutoBackupScheduler(prefsService);
 
@@ -84,7 +84,7 @@ void main() {
         fakeRepo,
         prefsService,
         scheduler,
-        currencyService,
+        fileNameGenerator: FakeBackupFileNameGenerator(),
       );
     });
 
@@ -104,20 +104,32 @@ void main() {
 
     test('Restores successfully and updates state', () async {
       final summary = await fakeRepo.inspectBackup(Uint8List(0));
-      final success = await viewModel.restoreBackup(Uint8List.fromList([1, 2, 3]), summary: summary);
+      final success = await viewModel.restoreBackup(
+        Uint8List.fromList([1, 2, 3]),
+        summary: summary,
+      );
 
       expect(success, isTrue);
-      expect(viewModel.state.successMessage, contains('Restored 10 transactions'));
+      expect(
+        viewModel.state.successMessage,
+        contains('Restored 10 transactions'),
+      );
       expect(viewModel.state.isBusy, isFalse);
     });
 
     test('Maps failures to friendly user message on restore error', () async {
       fakeRepo.shouldFailRestore = true;
       final summary = await fakeRepo.inspectBackup(Uint8List(0));
-      final success = await viewModel.restoreBackup(Uint8List.fromList([1, 2, 3]), summary: summary);
+      final success = await viewModel.restoreBackup(
+        Uint8List.fromList([1, 2, 3]),
+        summary: summary,
+      );
 
       expect(success, isFalse);
-      expect(viewModel.state.userErrorMessage, contains('Backup data is invalid: Invalid data in backup'));
+      expect(
+        viewModel.state.userErrorMessage,
+        contains('Backup data is invalid: Invalid data in backup'),
+      );
       expect(viewModel.state.isBusy, isFalse);
     });
   });

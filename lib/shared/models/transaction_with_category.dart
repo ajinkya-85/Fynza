@@ -1,4 +1,5 @@
-import '../../data/db/app_database.dart';
+import '../../features/categories/domain/models/category.dart';
+import '../../features/transactions/domain/models/transaction.dart';
 
 class TransactionWithCategory {
   final Transaction transaction;

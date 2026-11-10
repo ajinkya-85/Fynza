@@ -16,10 +16,10 @@ Fynza is an offline-first Flutter expense tracker. It supports income and expens
 
 ## Architecture
 
-The project uses feature-oriented MVVM:
+The project uses feature-oriented MVVM with layer boundaries:
 
 ```
-View → ViewModel → Repository → DAO / Service
+View → ViewModel → Domain contract → Data implementation → DAO / Service
 ```
 
 Key locations:
@@ -28,6 +28,15 @@ Key locations:
 - `lib/data/db/` — Drift database and tables
 - `lib/shared/` — models, reusable widgets, and shared providers
 - `lib/features/` — dashboard, transactions, budget, categories, settings, navigation, and backup
+
+Architecture rules currently applied:
+
+- Domain repository contracts and entities do not import Drift, database rows, or data-layer services.
+- Drift rows are mapped to domain `Category`, `Transaction`, and `Budget` entities at the data boundary.
+- Repository implementations live under each feature's `data/repositories/`; contracts remain under `domain/repositories/`.
+- Presentation code consumes domain contracts/service interfaces and app-level Riverpod providers rather than importing data services or generated database models.
+- `lib/core/di/database_provider.dart` is the composition root for repositories and infrastructure-backed providers. `AppStartupCoordinator` keeps startup scheduling orchestration out of the navigation view.
+- Backup file metadata and service abstractions used by presentation live in the domain layer; the repository contract exposes paths and value types rather than `File` or `CurrencyService`.
 
 ## Current UI and Feature State
 
@@ -42,6 +51,7 @@ Key locations:
   - **Expense Cards**: Soft Rose Blush (`#FDECE9` / `#331D1C` dark) with warm coral text (`#D94136` / `#FF8A80` dark).
   - **Income Cards**: Matcha Mint (`#E6F5EC` / `#162D20` dark) with forest jade text (`#238244` / `#81C784` dark).
   - **Pastel Chart Palette**: `[#F49E8C, #7DBCE6, #C2A5E7, #F7CE72, #7FDCB8]`.
+  - **Category Accent Palette**: 24 coordinated warm pastel accents (apricot, sage, denim, lavender, rose, berry, teal, honey, jade, sea glass, terracotta, cocoa, sky, marigold, eucalyptus, and more) shared by the category picker and default category seeding. Schema v4 migrates existing stored categories using the old palette to the new palette while preserving arbitrary custom colors.
 
 ### Dashboard & Financial Summary
 
@@ -146,7 +156,7 @@ Key locations:
   - **Possible Duplicate Detection**: Detects potential duplicates within ±24 hours (`CaptureDao.hasMatchingLoggedTransaction`).
   - **Duplicate Warning UI (Yellow Treatment)**: Highlighted in `CaptureInboxView` with amber/yellow border and warning badge (`⚠️ Possible Duplicate`).
 - **Database & DAO (`captured_transactions_table.dart`, `counterparty_rules_table.dart`, `capture_dao.dart`)**:
-  - Drift schema v2 with migration strategy from v1 preserving all existing tables and data.
+  - Drift schema v4 with migration strategy from v1-v3 preserving existing tables and data, including migration of legacy category palette colors.
   - Stores status (`pending`, `confirmed`, `dismissed`) and nullable foreign key `transaction_id`.
   - Includes auto-purge for dismissed/confirmed captures older than 90 days.
 - **Capture Modes & Master Toggle**:
@@ -190,7 +200,7 @@ Key locations:
 - **Layer Boundary Guarantee**: Zero views import or communicate with repositories, DAOs, or database classes directly (with cross-feature coordination managed via app-level composition). Views talk exclusively to their ViewModels.
 - **Offline-First Guarantee**: 100% offline-first operation. Zero internet permissions in `android/app/src/main/AndroidManifest.xml`.
 - **Data Integrity**: All money values are strictly integer cents (`int`), with zero floating-point conversions.
-- **Drift Database**: Schema v2 with atomic `MigrationStrategy(onUpgrade: ...)` preserving all existing data; DAOs are feature-scoped; all UI data binding uses reactive `.watch()` streams.
+- **Drift Database**: Schema v4 with `MigrationStrategy(onUpgrade: ...)` preserving existing data and migrating already-saved legacy category palette colors; DAOs are feature-scoped; all UI data binding uses reactive `.watch()` streams.
 - **Material 3 & Apple Fluid Design**:
   - Centralized dynamic theming via `AppTheme`, zero hardcoded colors, full dark/light mode support.
   - AppBar scrolling is seamless with `scrolledUnderElevation: 0` and `surfaceTintColor: Colors.transparent` (zero shade darkening on scroll).
@@ -215,4 +225,4 @@ flutter test
 flutter build apk --release
 ```
 
-*Status: 109/109 tests passing; 0 analyzer issues.*
+*Status: `flutter analyze lib test` and the full `flutter test` suite pass after the repository and presentation boundary cleanup.*

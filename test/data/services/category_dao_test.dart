@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/core/theme/category_palette.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -24,9 +25,21 @@ void main() {
         isTrue,
       );
       // Salary should exist
+      expect(categories.any((c) => c.name == 'Salary' && c.isIncome), isTrue);
       expect(
-        categories.any((c) => c.name == 'Salary' && c.isIncome),
-        isTrue,
+        CategoryPalette.colors.toSet(),
+        hasLength(CategoryPalette.colors.length),
+      );
+      expect(
+        categories
+            .where((category) => category.name == 'Food & Dining')
+            .single
+            .color,
+        CategoryPalette.colors[0],
+      );
+      expect(
+        categories.where((category) => category.name == 'Salary').single.color,
+        CategoryPalette.colors[8],
       );
     });
 
@@ -62,5 +75,47 @@ void main() {
       final fetched = await db.categoryDao.getCategoryById(id);
       expect(fetched, isNull);
     });
+
+    test(
+      'migrates colors on already-saved categories and preserves custom colors',
+      () async {
+        await db.customStatement(
+          'UPDATE categories SET color = ? WHERE name = ?',
+          [CategoryPalette.legacyColors[0], 'Food & Dining'],
+        );
+        final legacyCustomId = await db.categoryDao.insertCategory(
+          CategoriesCompanion.insert(
+            name: 'Legacy custom',
+            icon: 'category',
+            color: CategoryPalette.legacyColors[12],
+          ),
+        );
+        final customColorId = await db.categoryDao.insertCategory(
+          CategoriesCompanion.insert(
+            name: 'My custom color',
+            icon: 'category',
+            color: 0xFF00E676,
+          ),
+        );
+
+        await db.migrateLegacyCategoryColors();
+
+        final categories = await db.categoryDao.getAllCategories();
+        expect(
+          categories
+              .singleWhere((category) => category.name == 'Food & Dining')
+              .color,
+          CategoryPalette.colors[0],
+        );
+        expect(
+          (await db.categoryDao.getCategoryById(legacyCustomId))!.color,
+          CategoryPalette.colors[12],
+        );
+        expect(
+          (await db.categoryDao.getCategoryById(customColorId))!.color,
+          0xFF00E676,
+        );
+      },
+    );
   });
 }

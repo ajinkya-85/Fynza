@@ -4,14 +4,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../../../core/services/currency_service.dart';
-import '../../data/services/auto_backup_scheduler.dart';
-import '../../data/services/backup_file_service.dart';
-import '../../data/services/backup_preferences_service.dart';
+import '../../../../core/di/database_provider.dart';
 import '../../domain/models/auto_backup_frequency.dart';
+import '../../domain/models/backup_file_info.dart';
 import '../../domain/models/backup_failure.dart';
 import '../../domain/models/backup_summary.dart';
 import '../../domain/repositories/backup_repository.dart';
+import '../../domain/services/backup_services.dart';
 
 class BackupUiState {
   final bool isBusy;
@@ -62,27 +61,28 @@ class BackupUiState {
       autoBackups: autoBackups ?? this.autoBackups,
       storageUsageBytes: storageUsageBytes ?? this.storageUsageBytes,
       storageFileCount: storageFileCount ?? this.storageFileCount,
-      userErrorMessage: clearError ? null : (userErrorMessage ?? this.userErrorMessage),
-      successMessage: clearSuccess ? null : (successMessage ?? this.successMessage),
+      userErrorMessage: clearError
+          ? null
+          : (userErrorMessage ?? this.userErrorMessage),
+      successMessage: clearSuccess
+          ? null
+          : (successMessage ?? this.successMessage),
     );
   }
 }
 
 class BackupViewModel extends StateNotifier<BackupUiState> {
   final BackupRepository _repository;
-  final BackupPreferencesService _prefsService;
-  final AutoBackupScheduler _scheduler;
-  final CurrencyService _currencyService;
-  final BackupFileService _fileService;
+  final BackupPreferences _prefsService;
+  final BackupScheduleController _scheduler;
+  final BackupFileNameGenerator _fileNameGenerator;
 
   BackupViewModel(
     this._repository,
     this._prefsService,
-    this._scheduler,
-    this._currencyService, {
-    BackupFileService? fileService,
-  })  : _fileService = fileService ?? BackupFileService(),
-        super(const BackupUiState()) {
+    this._scheduler, {
+    required this._fileNameGenerator,
+  }) : super(const BackupUiState()) {
     loadState();
   }
 
@@ -117,7 +117,7 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
 
     try {
       final bytes = await _repository.createBackupBytes();
-      final defaultFileName = _fileService.generateManualFileName();
+      final defaultFileName = _fileNameGenerator.generateManualFileName();
 
       final outputFilePath = await FilePicker.platform.saveFile(
         dialogTitle: 'Save backup file',
@@ -157,7 +157,8 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
     }
   }
 
-  Future<({Uint8List bytes, BackupSummary summary, String fileName})?> pickAndInspectBackupFile() async {
+  Future<({Uint8List bytes, BackupSummary summary, String fileName})?>
+  pickAndInspectBackupFile() async {
     if (state.isBusy) return null;
 
     try {
@@ -212,7 +213,8 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
     }
   }
 
-  Future<({Uint8List bytes, BackupSummary summary, String fileName})?> inspectExistingFile(File file) async {
+  Future<({Uint8List bytes, BackupSummary summary, String fileName})?>
+  inspectExistingFile(File file) async {
     if (state.isBusy) return null;
 
     try {
@@ -246,7 +248,10 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
     }
   }
 
-  Future<bool> restoreBackup(Uint8List bytes, {required BackupSummary summary}) async {
+  Future<bool> restoreBackup(
+    Uint8List bytes, {
+    required BackupSummary summary,
+  }) async {
     if (state.isBusy) return false;
 
     state = state.copyWith(
@@ -257,10 +262,7 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
     );
 
     try {
-      await _repository.restoreBackup(
-        bytes,
-        currencyService: _currencyService,
-      );
+      await _repository.restoreBackup(bytes);
 
       await loadState();
 
@@ -296,7 +298,7 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
   }
 
   Future<void> deleteAutoBackup(File file) async {
-    await _repository.deleteBackupFile(file);
+    await _repository.deleteBackupFile(file.path);
     final backups = await _repository.listAutoBackups();
     final usage = await _repository.getStorageUsage();
     state = state.copyWith(
@@ -309,10 +311,7 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
 
   Future<void> shareAutoBackup(File file) async {
     try {
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: 'Fynza Backup',
-      );
+      await Share.shareXFiles([XFile(file.path)], subject: 'Fynza Backup');
     } catch (e) {
       state = state.copyWith(userErrorMessage: 'Failed to share backup: $e');
     }
@@ -335,15 +334,14 @@ class BackupViewModel extends StateNotifier<BackupUiState> {
 
 final backupViewModelProvider =
     StateNotifierProvider<BackupViewModel, BackupUiState>((ref) {
-  final repository = ref.watch(backupRepositoryProvider);
-  final prefsService = ref.watch(backupPreferencesServiceProvider);
-  final scheduler = ref.watch(autoBackupSchedulerProvider);
-  final currencyService = ref.watch(currencyServiceProvider);
-
-  return BackupViewModel(
-    repository,
-    prefsService,
-    scheduler,
-    currencyService,
-  );
-});
+      final repository = ref.watch(backupRepositoryProvider);
+      final prefsService = ref.watch(backupPreferencesServiceProvider);
+      final scheduler = ref.watch(autoBackupSchedulerProvider);
+      final fileNameGenerator = ref.watch(backupFileServiceProvider);
+      return BackupViewModel(
+        repository,
+        prefsService,
+        scheduler,
+        fileNameGenerator: fileNameGenerator,
+      );
+    });

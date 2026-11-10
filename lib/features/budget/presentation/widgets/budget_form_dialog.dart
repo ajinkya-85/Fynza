@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/currency_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
-import '../../../../data/db/app_database.dart';
+import '../../../categories/domain/models/category.dart';
 import '../../../../shared/widgets/category_icon.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 
@@ -41,7 +41,8 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedCategoryId = widget.initialCategoryId ??
+    _selectedCategoryId =
+        widget.initialCategoryId ??
         (widget.availableCategories.isNotEmpty
             ? widget.availableCategories.first.id
             : null);
@@ -89,13 +90,15 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isEditing ? Icons.edit_note : Icons.account_balance_wallet_rounded,
+                    isEditing
+                        ? Icons.edit_note
+                        : Icons.account_balance_wallet_rounded,
                     size: 32,
                     color: theme.colorScheme.primary,
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Title
                 Text(
                   isEditing ? 'Edit Budget' : 'Set New Budget',
@@ -128,12 +131,16 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                     icon: const Icon(Icons.arrow_drop_down_circle_outlined),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      fillColor: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.3),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                     items: widget.availableCategories.map((cat) {
                       return DropdownMenuItem<int>(
@@ -175,14 +182,16 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _amountController,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                     hintText: '0.00',
                     prefixIcon: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -194,12 +203,18 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                         ),
                       ),
                     ),
-                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 20,
+                    ),
                   ),
                   validator: (val) {
                     if (val == null || val.trim().isEmpty) {
@@ -249,8 +264,9 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                   onPressed: () {
                     if (_formKey.currentState?.validate() ?? false) {
                       HapticFeedback.mediumImpact();
-                      final cents =
-                          CurrencyFormatter.parseToCents(_amountController.text);
+                      final cents = CurrencyFormatter.parseToCents(
+                        _amountController.text,
+                      );
                       Navigator.of(context).pop(
                         BudgetFormResult(
                           categoryId: _selectedCategoryId!,
@@ -267,7 +283,9 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.3,
+                          ),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -313,10 +331,7 @@ class _QuickDialogChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _QuickDialogChip({
-    required this.label,
-    required this.onTap,
-  });
+  const _QuickDialogChip({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

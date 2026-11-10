@@ -4,23 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../domain/models/backup_failure.dart';
+import '../../domain/models/backup_file_info.dart';
+import '../../domain/services/backup_services.dart';
 import 'backup_serializer.dart';
 
-class BackupFileInfo {
-  final File file;
-  final String name;
-  final int sizeBytes;
-  final DateTime modifiedAt;
-
-  const BackupFileInfo({
-    required this.file,
-    required this.name,
-    required this.sizeBytes,
-    required this.modifiedAt,
-  });
-}
-
-class BackupFileService {
+class BackupFileService implements BackupFileNameGenerator {
   static const String appSlug = 'Fynza';
   static const int defaultMaxAutoBackups = 3;
   static const int defaultMaxPreRestoreBackups = 2;
@@ -70,6 +58,7 @@ class BackupFileService {
   }
 
   /// Generates manual backup file name.
+  @override
   String generateManualFileName([DateTime? time]) {
     final now = time ?? DateTime.now();
     final formatted = _fileDateFormatter.format(now);
@@ -134,7 +123,10 @@ class BackupFileService {
   }
 
   /// Saves an auto backup and rotates old ones.
-  Future<File> saveAutoBackup(Uint8List bytes, {int maxBackups = defaultMaxAutoBackups}) async {
+  Future<File> saveAutoBackup(
+    Uint8List bytes, {
+    int maxBackups = defaultMaxAutoBackups,
+  }) async {
     await cleanStaleTempFiles();
     final dir = await getBackupDirectory();
     final fileName = generateAutoFileName();
@@ -146,7 +138,10 @@ class BackupFileService {
   }
 
   /// Saves a pre-restore safety backup and rotates old ones.
-  Future<File> savePreRestoreBackup(Uint8List bytes, {int maxBackups = defaultMaxPreRestoreBackups}) async {
+  Future<File> savePreRestoreBackup(
+    Uint8List bytes, {
+    int maxBackups = defaultMaxPreRestoreBackups,
+  }) async {
     await cleanStaleTempFiles();
     final dir = await getPreRestoreDirectory();
     final fileName = generatePreRestoreFileName();
@@ -170,12 +165,14 @@ class BackupFileService {
                 name.startsWith('auto_expense_tracker_')) &&
             name.endsWith('.${BackupSerializer.backupExtension}')) {
           final stat = await entity.stat();
-          list.add(BackupFileInfo(
-            file: entity,
-            name: name,
-            sizeBytes: stat.size,
-            modifiedAt: stat.modified,
-          ));
+          list.add(
+            BackupFileInfo(
+              path: entity.path,
+              name: name,
+              sizeBytes: stat.size,
+              modifiedAt: stat.modified,
+            ),
+          );
         }
       }
     }
@@ -185,21 +182,26 @@ class BackupFileService {
   }
 
   /// Rotates auto backup files, keeping only the newest [maxBackups].
-  Future<void> rotateAutoBackups({int maxBackups = defaultMaxAutoBackups}) async {
+  Future<void> rotateAutoBackups({
+    int maxBackups = defaultMaxAutoBackups,
+  }) async {
     final files = await listAutoBackups();
     if (files.length <= maxBackups) return;
 
     for (var i = maxBackups; i < files.length; i++) {
       try {
-        if (await files[i].file.exists()) {
-          await files[i].file.delete();
+        final file = File(files[i].path);
+        if (await file.exists()) {
+          await file.delete();
         }
       } catch (_) {}
     }
   }
 
   /// Rotates pre-restore safety backups, keeping only the newest [maxBackups].
-  Future<void> rotatePreRestoreBackups({int maxBackups = defaultMaxPreRestoreBackups}) async {
+  Future<void> rotatePreRestoreBackups({
+    int maxBackups = defaultMaxPreRestoreBackups,
+  }) async {
     final dir = await getPreRestoreDirectory();
     if (!await dir.exists()) return;
 

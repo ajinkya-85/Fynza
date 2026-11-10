@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import '../../core/theme/category_palette.dart';
 import '../../features/auto_capture/data/services/capture_dao.dart';
 import '../../features/auto_capture/domain/models/capture_status.dart';
 import '../../features/budget/data/services/budget_dao.dart';
@@ -15,7 +16,13 @@ import 'tables/transactions_table.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Categories, Transactions, Budgets, CapturedTransactions, CounterpartyRules],
+  tables: [
+    Categories,
+    Transactions,
+    Budgets,
+    CapturedTransactions,
+    CounterpartyRules,
+  ],
   daos: [CategoryDao, TransactionDao, BudgetDao, CaptureDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -23,21 +30,33 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator m) async {
-          await m.createAll();
-          await _seedDefaultCategories();
-        },
-        onUpgrade: (Migrator m, int from, int to) async {
-          if (from == 1) {
-            await m.createTable(capturedTransactions);
-            await m.createTable(counterpartyRules);
-          }
-        },
-      );
+    onCreate: (Migrator m) async {
+      await m.createAll();
+      await _seedDefaultCategories();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from == 1) {
+        await m.createTable(capturedTransactions);
+        await m.createTable(counterpartyRules);
+      }
+      if (from < 4 && to >= 4) {
+        await migrateLegacyCategoryColors();
+      }
+    },
+  );
+
+  Future<void> migrateLegacyCategoryColors() async {
+    for (var i = 0; i < CategoryPalette.legacyColors.length; i++) {
+      await customStatement('UPDATE categories SET color = ? WHERE color = ?', [
+        CategoryPalette.colors[i],
+        CategoryPalette.legacyColors[i],
+      ]);
+    }
+  }
 
   Future<void> _seedDefaultCategories() async {
     final defaultCategories = [
@@ -45,49 +64,49 @@ class AppDatabase extends _$AppDatabase {
       CategoriesCompanion.insert(
         name: 'Food & Dining',
         icon: 'restaurant',
-        color: 0xFFE65100,
+        color: CategoryPalette.colors[0],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Groceries',
         icon: 'shopping_cart',
-        color: 0xFF2E7D32,
+        color: CategoryPalette.colors[1],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Transport',
         icon: 'directions_car',
-        color: 0xFF0277BD,
+        color: CategoryPalette.colors[2],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Entertainment',
         icon: 'movie',
-        color: 0xFF7B1FA2,
+        color: CategoryPalette.colors[3],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Bills & Utilities',
         icon: 'receipt_long',
-        color: 0xFFC62828,
+        color: CategoryPalette.colors[4],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Shopping',
         icon: 'shopping_bag',
-        color: 0xFFAD1457,
+        color: CategoryPalette.colors[5],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Health',
         icon: 'medical_services',
-        color: 0xFF00695C,
+        color: CategoryPalette.colors[6],
         isIncome: const Value(false),
       ),
       CategoriesCompanion.insert(
         name: 'Education',
         icon: 'school',
-        color: 0xFFF57F17,
+        color: CategoryPalette.colors[7],
         isIncome: const Value(false),
       ),
 
@@ -95,25 +114,25 @@ class AppDatabase extends _$AppDatabase {
       CategoriesCompanion.insert(
         name: 'Salary',
         icon: 'payments',
-        color: 0xFF1B5E20,
+        color: CategoryPalette.colors[8],
         isIncome: const Value(true),
       ),
       CategoriesCompanion.insert(
         name: 'Freelance',
         icon: 'laptop_mac',
-        color: 0xFF283593,
+        color: CategoryPalette.colors[9],
         isIncome: const Value(true),
       ),
       CategoriesCompanion.insert(
         name: 'Investments',
         icon: 'trending_up',
-        color: 0xFF00838F,
+        color: CategoryPalette.colors[10],
         isIncome: const Value(true),
       ),
       CategoriesCompanion.insert(
         name: 'Gifts & Other',
         icon: 'card_giftcard',
-        color: 0xFFD84315,
+        color: CategoryPalette.colors[11],
         isIncome: const Value(true),
       ),
     ];

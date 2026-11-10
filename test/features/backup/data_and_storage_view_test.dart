@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fynza/core/services/currency_service.dart';
 import 'package:fynza/features/backup/domain/models/auto_backup_frequency.dart';
-import 'package:fynza/features/backup/domain/repositories/backup_repository.dart';
+import 'package:fynza/core/di/database_provider.dart';
 import 'package:fynza/features/backup/presentation/views/data_and_storage_view.dart';
 import 'backup_view_model_test.dart';
 
@@ -26,44 +26,48 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           backupRepositoryProvider.overrideWithValue(fakeRepo),
         ],
-        child: const MaterialApp(
-          home: DataAndStorageView(),
-        ),
+        child: const MaterialApp(home: DataAndStorageView()),
       );
     }
 
-    testWidgets('Renders all sections, pill buttons, storage location, and storage usage', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Renders all sections, pill buttons, storage location, and storage usage',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Data and storage'), findsOneWidget);
-      expect(find.text('Storage location'), findsOneWidget);
-      expect(find.text('/mock/backups'), findsOneWidget);
-      expect(find.text('BACKUP AND RESTORE'), findsOneWidget);
-      expect(find.text('Create backup'), findsOneWidget);
-      expect(find.text('Restore backup'), findsOneWidget);
-      expect(find.text('Automatic backup frequency'), findsOneWidget);
-      expect(find.text('STORAGE USAGE'), findsOneWidget);
-      expect(find.text('Automatic backups'), findsOneWidget);
-    });
+        expect(find.text('Data and storage'), findsOneWidget);
+        expect(find.text('Storage location'), findsOneWidget);
+        expect(find.text('/mock/backups'), findsOneWidget);
+        expect(find.text('BACKUP AND RESTORE'), findsOneWidget);
+        expect(find.text('Create backup'), findsOneWidget);
+        expect(find.text('Restore backup'), findsOneWidget);
+        expect(find.text('Automatic backup frequency'), findsOneWidget);
+        expect(find.text('STORAGE USAGE'), findsOneWidget);
+        expect(find.text('Automatic backups'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Tapping frequency tile opens FrequencyDialog and updates selection', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Tapping frequency tile opens FrequencyDialog and updates selection',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      final freqFinder = find.text('Automatic backup frequency');
-      await tester.ensureVisible(freqFinder);
-      await tester.tap(freqFinder);
-      await tester.pumpAndSettle();
+        final freqFinder = find.text('Automatic backup frequency');
+        await tester.ensureVisible(freqFinder);
+        await tester.tap(freqFinder);
+        await tester.pumpAndSettle();
 
-      final dailyOption = find.text(AutoBackupFrequency.daily.label);
-      await tester.ensureVisible(dailyOption);
-      await tester.tap(dailyOption);
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 1));
+        final dailyOption = find.text(AutoBackupFrequency.daily.label);
+        await tester.ensureVisible(dailyOption);
+        await tester.tap(dailyOption);
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Daily', skipOffstage: false), findsOneWidget);
-    });
+        expect(find.text('Daily', skipOffstage: false), findsOneWidget);
+      },
+    );
 
     testWidgets('Tapping help icon opens BackupInfoDialog', (tester) async {
       await tester.pumpWidget(createTestWidget());

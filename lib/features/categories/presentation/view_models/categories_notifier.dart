@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/di/database_provider.dart';
-import '../../../../data/db/app_database.dart';
+import '../../domain/models/category.dart';
 import '../../domain/repositories/category_repository.dart';
 
 final categoriesProvider = StreamProvider<List<Category>>((ref) {
@@ -58,7 +58,9 @@ class CategoriesNotifier extends StateNotifier<AsyncValue<List<Category>>> {
 }
 
 final categoriesNotifierProvider =
-    StateNotifierProvider<CategoriesNotifier, AsyncValue<List<Category>>>((ref) {
-  final repository = ref.watch(categoryRepositoryProvider);
-  return CategoriesNotifier(repository);
-});
+    StateNotifierProvider<CategoriesNotifier, AsyncValue<List<Category>>>((
+      ref,
+    ) {
+      final repository = ref.watch(categoryRepositoryProvider);
+      return CategoriesNotifier(repository);
+    });

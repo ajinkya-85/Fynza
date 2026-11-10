@@ -22,10 +22,7 @@ class CategoryFormData {
 class CategoryFormScreen extends StatefulWidget {
   final bool initialIsIncome;
 
-  const CategoryFormScreen({
-    super.key,
-    this.initialIsIncome = false,
-  });
+  const CategoryFormScreen({super.key, this.initialIsIncome = false});
 
   @override
   State<CategoryFormScreen> createState() => _CategoryFormScreenState();
@@ -138,13 +135,18 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.35)
-                      : theme.colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.45),
+                      ? theme.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.35,
+                        )
+                      : theme.colorScheme.surfaceContainerHigh.withValues(
+                          alpha: 0.45,
+                        ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark
@@ -162,8 +164,9 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                     border: InputBorder.none,
                     hintText: 'e.g. Subscriptions, Groceries...',
                     hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.7),
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
                     ),
                     icon: Icon(
                       Icons.label_outline_rounded,
@@ -210,24 +213,25 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                         color: isSelected
                             ? theme.colorScheme.primaryContainer
                             : (isDark
-                                ? theme.colorScheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.4)
-                                : theme.colorScheme.surfaceContainerHigh
-                                    .withValues(alpha: 0.5)),
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                        .withValues(alpha: 0.4)
+                                  : theme.colorScheme.surfaceContainerHigh
+                                        .withValues(alpha: 0.5)),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: isSelected
                               ? theme.colorScheme.primary
                               : (isDark
-                                  ? Colors.white.withValues(alpha: 0.08)
-                                  : Colors.black.withValues(alpha: 0.04)),
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : Colors.black.withValues(alpha: 0.04)),
                           width: isSelected ? 2.0 : 1.0,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: theme.colorScheme.primary
-                                      .withValues(alpha: 0.25),
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.25,
+                                  ),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -279,8 +283,8 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                         shape: BoxShape.circle,
                         border: isSelected
                             ? Border.all(
-                                color: isDark ? Colors.white : Colors.white,
-                                width: 2.5,
+                                color: theme.colorScheme.surface,
+                                width: 3,
                               )
                             : null,
                         boxShadow: isSelected
@@ -300,9 +304,11 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
                               ],
                       ),
                       child: isSelected
-                          ? const Icon(
+                          ? Icon(
                               Icons.check_rounded,
-                              color: Colors.white,
+                              color: color.computeLuminance() > 0.42
+                                  ? theme.colorScheme.onSurface
+                                  : Colors.white,
                               size: 20,
                             )
                           : null,

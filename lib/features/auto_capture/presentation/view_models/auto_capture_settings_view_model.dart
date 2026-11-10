@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/services/capture_preferences_service.dart';
-import '../../data/services/notification_capture_service.dart';
+import '../../../../core/di/database_provider.dart';
 import '../../domain/models/capture_status.dart';
 import '../../domain/repositories/capture_repository.dart';
+import '../../domain/services/capture_services.dart';
 
 class AutoCaptureSettingsState {
   final bool isMasterEnabled;
@@ -37,23 +37,26 @@ class AutoCaptureSettingsState {
   }
 }
 
-class AutoCaptureSettingsViewModel extends StateNotifier<AutoCaptureSettingsState> {
-  final CapturePreferencesService _prefs;
-  final NotificationCaptureService _captureService;
+class AutoCaptureSettingsViewModel
+    extends StateNotifier<AutoCaptureSettingsState> {
+  final CapturePreferences _prefs;
+  final CapturePermissionService _captureService;
   final CaptureRepository _repository;
-  final AutoCaptureEnabledNotifier? _enabledNotifier;
+  final CaptureEnabledController? _enabledNotifier;
 
   AutoCaptureSettingsViewModel(
     this._prefs,
     this._captureService,
     this._repository, [
     this._enabledNotifier,
-  ]) : super(AutoCaptureSettingsState(
-          isMasterEnabled: _prefs.isMasterEnabled(),
-          mode: _prefs.getMode(),
-          isPermissionGranted: false,
-          ignoredSenders: _prefs.getIgnoredSenders(),
-        )) {
+  ]) : super(
+         AutoCaptureSettingsState(
+           isMasterEnabled: _prefs.isMasterEnabled(),
+           mode: _prefs.getMode(),
+           isPermissionGranted: false,
+           ignoredSenders: _prefs.getIgnoredSenders(),
+         ),
+       ) {
     refreshPermissionStatus();
   }
 
@@ -98,11 +101,18 @@ class AutoCaptureSettingsViewModel extends StateNotifier<AutoCaptureSettingsStat
 }
 
 final autoCaptureSettingsViewModelProvider =
-    StateNotifierProvider.autoDispose<AutoCaptureSettingsViewModel, AutoCaptureSettingsState>((ref) {
-  final prefs = ref.watch(capturePreferencesServiceProvider);
-  final captureService = ref.watch(notificationCaptureServiceProvider);
-  final repo = ref.watch(captureRepositoryProvider);
-  final enabledNotifier = ref.watch(autoCaptureEnabledProvider.notifier);
-  return AutoCaptureSettingsViewModel(prefs, captureService, repo, enabledNotifier);
-});
-
+    StateNotifierProvider.autoDispose<
+      AutoCaptureSettingsViewModel,
+      AutoCaptureSettingsState
+    >((ref) {
+      final prefs = ref.watch(capturePreferencesServiceProvider);
+      final captureService = ref.watch(notificationCaptureServiceProvider);
+      final repo = ref.watch(captureRepositoryProvider);
+      final enabledNotifier = ref.watch(autoCaptureEnabledProvider.notifier);
+      return AutoCaptureSettingsViewModel(
+        prefs,
+        captureService,
+        repo,
+        enabledNotifier,
+      );
+    });

@@ -6,15 +6,13 @@ import 'package:fynza/features/auto_capture/domain/models/capture_status.dart';
 import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {
-  group('Database Schema Migration Tests (v1 -> v2)', () {
-    test('upgrades schema from version 1 to 2 cleanly and retains tables', () async {
+  group('Database Schema Tests', () {
+    test('current schema retains captured transaction tables', () async {
       final executor = NativeDatabase.memory();
       final db = AppDatabase.forTesting(executor);
 
-      // Verify schema version is 2
-      expect(db.schemaVersion, 2);
+      expect(db.schemaVersion, 4);
 
-      // Verify captured_transactions table works
       final id = await db.captureDao.insertCaptureOrIgnore(
         CapturedTransactionsCompanion.insert(
           amountCents: 15000,
@@ -38,4 +36,3 @@ void main() {
     });
   });
 }
-

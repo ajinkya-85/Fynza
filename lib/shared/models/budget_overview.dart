@@ -1,4 +1,5 @@
-import '../../data/db/app_database.dart';
+import '../../features/budget/domain/models/budget.dart';
+import '../../features/categories/domain/models/category.dart';
 
 class BudgetOverview {
   final Budget budget;

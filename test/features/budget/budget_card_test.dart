@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fynza/core/services/currency_service.dart';
-import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/budget/domain/models/budget.dart';
+import 'package:fynza/features/categories/domain/models/category.dart';
 import 'package:fynza/features/budget/presentation/widgets/budget_card.dart';
 import 'package:fynza/shared/models/budget_overview.dart';
 
@@ -16,7 +17,9 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    testWidgets('renders budget info, category name, and progress status', (tester) async {
+    testWidgets('renders budget info, category name, and progress status', (
+      tester,
+    ) async {
       final category = Category(
         id: 1,
         name: 'Dining',
@@ -39,13 +42,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: MaterialApp(
-            home: Scaffold(
-              body: BudgetCard(overview: overview),
-            ),
+            home: Scaffold(body: BudgetCard(overview: overview)),
           ),
         ),
       );
@@ -59,7 +58,9 @@ void main() {
       expect(find.text('45%'), findsOneWidget);
     });
 
-    testWidgets('renders over budget status badge when spent exceeds limit', (tester) async {
+    testWidgets('renders over budget status badge when spent exceeds limit', (
+      tester,
+    ) async {
       final category = Category(
         id: 1,
         name: 'Groceries',
@@ -82,13 +83,9 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: MaterialApp(
-            home: Scaffold(
-              body: BudgetCard(overview: overview),
-            ),
+            home: Scaffold(body: BudgetCard(overview: overview)),
           ),
         ),
       );

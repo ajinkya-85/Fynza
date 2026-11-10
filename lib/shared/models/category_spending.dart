@@ -1,4 +1,4 @@
-import '../../data/db/app_database.dart';
+import '../../features/categories/domain/models/category.dart';
 
 class CategorySpending {
   final Category category;

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/currency_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../domain/models/parsed_transaction.dart';
 import '../../domain/parsing/sms_transaction_parser.dart';
 import '../view_models/capture_inbox_view_model.dart';
@@ -11,7 +12,8 @@ class ParserPlaygroundView extends ConsumerStatefulWidget {
   const ParserPlaygroundView({super.key});
 
   @override
-  ConsumerState<ParserPlaygroundView> createState() => _ParserPlaygroundViewState();
+  ConsumerState<ParserPlaygroundView> createState() =>
+      _ParserPlaygroundViewState();
 }
 
 class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
@@ -42,7 +44,9 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
     if (text.isEmpty || _result is! ParsedTransaction) return;
 
     setState(() => _isAdding = true);
-    await ref.read(captureInboxViewModelProvider.notifier).ingestManualMessage(text);
+    await ref
+        .read(captureInboxViewModelProvider.notifier)
+        .ingestManualMessage(text);
 
     if (mounted) {
       setState(() => _isAdding = false);
@@ -58,55 +62,57 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SMS Parser Playground'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Paste a bank SMS below to test the parser. Message text remains in memory and is never logged or stored without parsing.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+      appBar: AppBar(title: const Text('SMS Parser Playground')),
+      body: FadingScrollBoundary(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Paste a bank SMS below to test the parser. Message text remains in memory and is never logged or stored without parsing.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _controller,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Paste SMS message here...',
-                border: const OutlineInputBorder(),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(80),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _controller,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: 'Paste SMS message here...',
+                  border: const OutlineInputBorder(),
+                  filled: true,
+                  fillColor: theme.colorScheme.surfaceContainerHighest
+                      .withAlpha(80),
+                ),
+                onChanged: (_) => _parse(),
               ),
-              onChanged: (_) => _parse(),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _parse,
-                    icon: const Icon(Icons.analytics_outlined),
-                    label: const Text('Parse'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _parse,
+                      icon: const Icon(Icons.analytics_outlined),
+                      label: const Text('Parse'),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () {
-                    _controller.clear();
-                    setState(() => _result = null);
-                  },
-                  child: const Text('Clear'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            if (_result != null) _buildResultCard(context, _result!),
-          ],
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () {
+                      _controller.clear();
+                      setState(() => _result = null);
+                    },
+                    child: const Text('Clear'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              if (_result != null) _buildResultCard(context, _result!),
+            ],
+          ),
         ),
       ),
     );
@@ -151,7 +157,9 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
 
     final parsed = result as ParsedTransaction;
     final isExpense = parsed.type.isExpense;
-    final typeColor = isExpense ? theme.colorScheme.error : theme.colorScheme.primary;
+    final typeColor = isExpense
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
 
     return Card(
       child: Padding(
@@ -161,7 +169,10 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.check_circle_outline,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Transaction Detected',
@@ -173,7 +184,9 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
                 const Spacer(),
                 Chip(
                   label: Text(
-                    parsed.confidence == ParseConfidence.high ? 'High Confidence' : 'Medium Confidence',
+                    parsed.confidence == ParseConfidence.high
+                        ? 'High Confidence'
+                        : 'Medium Confidence',
                     style: TextStyle(
                       fontSize: 11,
                       color: parsed.confidence == ParseConfidence.high
@@ -194,9 +207,20 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
               valueColor: typeColor,
             ),
             _buildFieldRow('Type', parsed.type.label, valueColor: typeColor),
-            _buildFieldRow('Counterparty', parsed.counterparty ?? 'Bank transaction'),
-            _buildFieldRow('Account Last 4', parsed.accountLast4 != null ? '•••• ${parsed.accountLast4}' : 'Not found'),
-            _buildFieldRow('Reference / Txn ID', parsed.reference ?? 'Not found'),
+            _buildFieldRow(
+              'Counterparty',
+              parsed.counterparty ?? 'Bank transaction',
+            ),
+            _buildFieldRow(
+              'Account Last 4',
+              parsed.accountLast4 != null
+                  ? '•••• ${parsed.accountLast4}'
+                  : 'Not found',
+            ),
+            _buildFieldRow(
+              'Reference / Txn ID',
+              parsed.reference ?? 'Not found',
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -227,14 +251,10 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           Text(
             value,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: valueColor,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600, color: valueColor),
           ),
         ],
       ),
     );
   }
 }
-

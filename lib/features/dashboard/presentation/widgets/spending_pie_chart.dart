@@ -227,17 +227,17 @@ class _OverviewLegendRow extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            CurrencyFormatter.formatCents(totalCents, currency),
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
             '${percent.toStringAsFixed(0)}%',
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 10,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            CurrencyFormatter.formatCents(totalCents, currency),
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

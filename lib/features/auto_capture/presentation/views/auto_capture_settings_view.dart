@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../domain/models/capture_status.dart';
 import '../view_models/auto_capture_settings_view_model.dart';
 import 'parser_playground_view.dart';
@@ -9,10 +10,12 @@ class AutoCaptureSettingsView extends ConsumerStatefulWidget {
   const AutoCaptureSettingsView({super.key});
 
   @override
-  ConsumerState<AutoCaptureSettingsView> createState() => _AutoCaptureSettingsViewState();
+  ConsumerState<AutoCaptureSettingsView> createState() =>
+      _AutoCaptureSettingsViewState();
 }
 
-class _AutoCaptureSettingsViewState extends ConsumerState<AutoCaptureSettingsView>
+class _AutoCaptureSettingsViewState
+    extends ConsumerState<AutoCaptureSettingsView>
     with WidgetsBindingObserver {
   @override
   void initState() {
@@ -29,7 +32,9 @@ class _AutoCaptureSettingsViewState extends ConsumerState<AutoCaptureSettingsVie
   @override
   void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
     if (lifecycleState == AppLifecycleState.resumed) {
-      ref.read(autoCaptureSettingsViewModelProvider.notifier).refreshPermissionStatus();
+      ref
+          .read(autoCaptureSettingsViewModelProvider.notifier)
+          .refreshPermissionStatus();
     }
   }
 
@@ -40,118 +45,128 @@ class _AutoCaptureSettingsViewState extends ConsumerState<AutoCaptureSettingsVie
     final viewModel = ref.read(autoCaptureSettingsViewModelProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Auto-Capture SMS'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildStatusCard(context, state, viewModel),
-          const SizedBox(height: 16),
-          SwitchListTile(
-            title: const Text('Enable Auto-Capture'),
-            subtitle: const Text('Detect bank SMS notifications on this device'),
-            value: state.isMasterEnabled,
-            onChanged: (val) => viewModel.setMasterEnabled(val),
-          ),
-          const Divider(),
-          const SizedBox(height: 8),
-          Text(
-            'Capture Mode',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+      appBar: AppBar(title: const Text('Auto-Capture SMS')),
+      body: FadingScrollBoundary(
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          children: [
+            _buildStatusCard(context, state, viewModel),
+            const SizedBox(height: 16),
+            SwitchListTile(
+              title: const Text('Enable Auto-Capture'),
+              subtitle: const Text(
+                'Detect bank SMS notifications on this device',
+              ),
+              value: state.isMasterEnabled,
+              onChanged: (val) => viewModel.setMasterEnabled(val),
             ),
-          ),
-          const SizedBox(height: 4),
-          RadioGroup<CaptureMode>(
-            groupValue: state.mode,
-            onChanged: (val) {
-              if (state.isMasterEnabled && val != null) {
-                viewModel.setMode(val);
-              }
-            },
-            child: Column(
-              children: [
-                RadioListTile<CaptureMode>(
-                  title: const Text('Review first (Recommended)'),
-                  subtitle: const Text('New transactions stay in inbox until you confirm them'),
-                  value: CaptureMode.reviewFirst,
-                  enabled: state.isMasterEnabled,
-                ),
-                RadioListTile<CaptureMode>(
-                  title: const Text('Add automatically'),
-                  subtitle: const Text(
-                    'High-confidence transactions with known category are added directly. (Undo is available)',
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              'Capture Mode',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            RadioGroup<CaptureMode>(
+              groupValue: state.mode,
+              onChanged: (val) {
+                if (state.isMasterEnabled && val != null) {
+                  viewModel.setMode(val);
+                }
+              },
+              child: Column(
+                children: [
+                  RadioListTile<CaptureMode>(
+                    title: const Text('Review first (Recommended)'),
+                    subtitle: const Text(
+                      'New transactions stay in inbox until you confirm them',
+                    ),
+                    value: CaptureMode.reviewFirst,
+                    enabled: state.isMasterEnabled,
                   ),
-                  value: CaptureMode.addAutomatically,
-                  enabled: state.isMasterEnabled,
-                ),
-              ],
-            ),
-          ),
-          const Divider(),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.science_outlined),
-            title: const Text('Test with a pasted message'),
-            subtitle: const Text('Try out the SMS parser in the playground'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ParserPlaygroundView(),
-                ),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.battery_charging_full_outlined),
-            title: const Text('Battery optimization help'),
-            subtitle: const Text('Ensure background notification capture works reliably'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showBatteryHelpDialog(context),
-          ),
-          const Divider(),
-          const SizedBox(height: 8),
-          Text(
-            'Ignored Senders',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (state.ignoredSenders.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'No ignored senders. You can ignore senders from the inbox.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
-            ...state.ignoredSenders.map(
-              (sender) => ListTile(
-                title: Text(sender),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Remove from ignored',
-                  onPressed: () => viewModel.removeIgnoredSender(sender),
-                ),
+                  RadioListTile<CaptureMode>(
+                    title: const Text('Add automatically'),
+                    subtitle: const Text(
+                      'High-confidence transactions with known category are added directly. (Undo is available)',
+                    ),
+                    value: CaptureMode.addAutomatically,
+                    enabled: state.isMasterEnabled,
+                  ),
+                ],
               ),
             ),
-          const Divider(),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: Icon(Icons.delete_forever, color: theme.colorScheme.error),
-            title: Text(
-              'Delete all captured data',
-              style: TextStyle(color: theme.colorScheme.error),
+            const Divider(),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.science_outlined),
+              title: const Text('Test with a pasted message'),
+              subtitle: const Text('Try out the SMS parser in the playground'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ParserPlaygroundView(),
+                  ),
+                );
+              },
             ),
-            subtitle: const Text('Removes all inbox items and logs'),
-            onTap: () => _showDeleteConfirmDialog(context, viewModel),
-          ),
-        ],
+            ListTile(
+              leading: const Icon(Icons.battery_charging_full_outlined),
+              title: const Text('Battery optimization help'),
+              subtitle: const Text(
+                'Ensure background notification capture works reliably',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showBatteryHelpDialog(context),
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+            Text(
+              'Ignored Senders',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (state.ignoredSenders.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'No ignored senders. You can ignore senders from the inbox.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              )
+            else
+              ...state.ignoredSenders.map(
+                (sender) => ListTile(
+                  title: Text(sender),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    tooltip: 'Remove from ignored',
+                    onPressed: () => viewModel.removeIgnoredSender(sender),
+                  ),
+                ),
+              ),
+            const Divider(),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(
+                Icons.delete_forever,
+                color: theme.colorScheme.error,
+              ),
+              title: Text(
+                'Delete all captured data',
+                style: TextStyle(color: theme.colorScheme.error),
+              ),
+              subtitle: const Text('Removes all inbox items and logs'),
+              onTap: () => _showDeleteConfirmDialog(context, viewModel),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -172,17 +187,20 @@ class _AutoCaptureSettingsViewState extends ConsumerState<AutoCaptureSettingsVie
       statusText = 'Disabled by you';
       statusColor = theme.colorScheme.outline;
       statusIcon = Icons.pause_circle_outline;
-      statusDesc = 'Auto-capture is turned off. Toggle the switch below to enable it.';
+      statusDesc =
+          'Auto-capture is turned off. Toggle the switch below to enable it.';
     } else if (!state.isPermissionGranted) {
       statusText = 'Permission needed';
       statusColor = theme.colorScheme.error;
       statusIcon = Icons.warning_amber_rounded;
-      statusDesc = 'Notification access is required to read bank SMS notifications.';
+      statusDesc =
+          'Notification access is required to read bank SMS notifications.';
     } else {
       statusText = 'Active';
       statusColor = theme.colorScheme.primary;
       statusIcon = Icons.check_circle_outline;
-      statusDesc = 'Listening for bank SMS notifications from default SMS apps.';
+      statusDesc =
+          'Listening for bank SMS notifications from default SMS apps.';
     }
 
     return Card(
@@ -313,4 +331,3 @@ class _AutoCaptureSettingsViewState extends ConsumerState<AutoCaptureSettingsVie
     );
   }
 }
-

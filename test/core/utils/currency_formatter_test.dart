@@ -5,8 +5,33 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('CurrencyFormatter', () {
     test('formats cents with the selected currency', () {
-      expect(CurrencyFormatter.formatCents(123456, AppCurrency.inr), '₹1234.56');
-      expect(CurrencyFormatter.formatCents(-50, AppCurrency.eur), '-€0.50');
+      expect(
+        CurrencyFormatter.formatCents(123456, AppCurrency.inr),
+        '₹ 1,234.56',
+      );
+      expect(CurrencyFormatter.formatCents(-50, AppCurrency.eur), '-€ 0.50');
+      expect(
+        CurrencyFormatter.formatCents(1250, AppCurrency.custom),
+        '? 12.50',
+      );
+      expect(
+        CurrencyFormatter.formatCents(12345678, AppCurrency.usd),
+        r'$ 123,456.78',
+      );
+      expect(
+        CurrencyFormatter.formatCents(-123456789, AppCurrency.usd),
+        r'-$ 1,234,567.89',
+      );
+    });
+
+    test('formats custom currency with spacing after the symbol', () {
+      const currency = CustomCurrencyDetails(
+        symbol: 'kr',
+        code: 'SEK',
+        name: 'Swedish krona',
+      );
+
+      expect(currency.format(12345678), 'kr 123,456.78');
     });
 
     test('parses decimal input without floating point conversion', () {

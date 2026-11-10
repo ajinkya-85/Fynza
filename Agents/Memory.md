@@ -62,6 +62,8 @@ Architecture rules currently applied:
   - Left card: Soft Rose Blush (`#FDECE9`) Expense card with upward arrow circular badge (`Icons.arrow_upward_rounded`) and coral text.
   - Right card: Matcha Mint (`#E6F5EC`) Income card with downward arrow circular badge (`Icons.arrow_downward_rounded`) and jade text.
 - **Spending Overview & Breakdown**: Dashboard shows a compact donut and category summary styled after the finance inspiration reference. The `Detail` action opens a dedicated breakdown page with the existing larger chart and full category list. Both charts and legend rows are informational only, with no tap-to-focus, animation selection, or haptic interaction.
+- **Dashboard Refresh & Entrance Motion**: Pulling down on the dashboard drains the Android notification capture queue when auto-capture is enabled; capture and dashboard streams update from the newly ingested items. Dashboard sections fade and rise in with a short stagger on first appearance.
+- **Scrollable Edge Fades**: Wrap vertical scrollable screens and scrollable dialogs/bottom sheets in the shared `FadingScrollBoundary` (`lib/shared/widgets/fading_scroll_boundary.dart`) for soft top/bottom content fades. It observes vertical scroll notifications and adjusts each edge fade as the user approaches or leaves that boundary; horizontal scrollers and nested non-scrollable lists do not need wrapping. Use this reusable wrapper for future vertical scroll surfaces.
 - **Quick-Access Budgets & Categories Cards**: Side-by-side square squircle widget cards (1:1 aspect ratio, 22px radius, 44px circular pastel badges, and top-right arrow pills) positioned above Recent Transactions on the Dashboard:
   - **Budgets Card**: Displays total monthly budget limit pill (`$X,XXX.XX`) above the Budgets name and subtitle.
   - **Categories Card**: Displays dual count badges (rose blush circle with upward arrow for expenses, matcha mint circle with downward arrow for income) above the Categories name and subtitle.
@@ -103,6 +105,7 @@ Architecture rules currently applied:
 - The app supports preset currencies and a persisted custom currency.
 - Currency selection is managed by `CurrencyService` and `selectedCurrencyProvider`.
 - Currency values are stored as integer cents and formatted through `CurrencyFormatter`.
+- Formatted amounts use international thousands separators (for example, `$ 123,456.78`), including custom currencies, with a space after the currency symbol.
 - Settings uses an expandable Currency section: it expands when tapped and collapses after a selection.
 
 ### Shared month selection

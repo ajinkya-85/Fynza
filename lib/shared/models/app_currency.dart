@@ -23,7 +23,8 @@ enum AppCurrency {
     final absoluteCents = cents.abs();
     final wholeAmount = absoluteCents ~/ 100;
     final fractionalAmount = (absoluteCents % 100).toString().padLeft(2, '0');
-    final formatted = '$symbol$wholeAmount.$fractionalAmount';
+    final formatted =
+        '$symbol ${_formatWholeAmount(wholeAmount)}.$fractionalAmount';
     if (cents < 0) return '-$formatted';
     return formatted;
   }
@@ -55,7 +56,14 @@ class CustomCurrencyDetails {
     final abs = cents.abs();
     final whole = abs ~/ 100;
     final frac = (abs % 100).toString().padLeft(2, '0');
-    final formatted = '$symbol$whole.$frac';
+    final formatted = '$symbol ${_formatWholeAmount(whole)}.$frac';
     return cents < 0 ? '-$formatted' : formatted;
   }
+}
+
+String _formatWholeAmount(int amount) {
+  return amount.toString().replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (_) => ',',
+  );
 }

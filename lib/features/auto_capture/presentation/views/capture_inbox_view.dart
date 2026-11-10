@@ -5,6 +5,7 @@ import '../../../../core/services/currency_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../transactions/presentation/views/transaction_form_screen.dart';
 import '../../domain/models/capture_item.dart';
 import '../view_models/capture_inbox_view_model.dart';
@@ -33,52 +34,72 @@ class CaptureInboxView extends ConsumerWidget {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.errorMessage != null
-              ? Center(child: Text(state.errorMessage!))
-              : RefreshIndicator(
-                  onRefresh: () => viewModel.drain(),
-                  child: ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      if (!state.isPermissionGranted) ...[
-                        _buildPermissionBanner(context, viewModel),
-                        const SizedBox(height: 16),
+          ? Center(child: Text(state.errorMessage!))
+          : RefreshIndicator(
+              onRefresh: () => viewModel.drain(),
+              child: FadingScrollBoundary(
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    if (!state.isPermissionGranted) ...[
+                      _buildPermissionBanner(context, viewModel),
+                      const SizedBox(height: 16),
+                    ],
+                    if (state.pendingItems.isEmpty &&
+                        state.recentlyAutoAdded.isEmpty)
+                      _buildEmptyState(context)
+                    else ...[
+                      if (state.pendingItems.isNotEmpty) ...[
+                        Text(
+                          'Pending Review (${state.pendingItems.length})',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...state.pendingItems.map(
+                          (item) => _buildPendingItemTile(
+                            context,
+                            ref,
+                            item,
+                            viewModel,
+                            currency,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                       ],
-                      if (state.pendingItems.isEmpty && state.recentlyAutoAdded.isEmpty)
-                        _buildEmptyState(context)
-                      else ...[
-                        if (state.pendingItems.isNotEmpty) ...[
-                          Text(
-                            'Pending Review (${state.pendingItems.length})',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                      if (state.recentlyAutoAdded.isNotEmpty) ...[
+                        Text(
+                          'Recently Auto-Added',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 8),
-                          ...state.pendingItems.map(
-                            (item) => _buildPendingItemTile(context, ref, item, viewModel, currency),
+                        ),
+                        const SizedBox(height: 8),
+                        ...state.recentlyAutoAdded.map(
+                          (item) => _buildAutoAddedTile(
+                            context,
+                            item,
+                            viewModel,
+                            currency,
                           ),
-                          const SizedBox(height: 24),
-                        ],
-                        if (state.recentlyAutoAdded.isNotEmpty) ...[
-                          Text(
-                            'Recently Auto-Added',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ...state.recentlyAutoAdded.map(
-                            (item) => _buildAutoAddedTile(context, item, viewModel, currency),
-                          ),
-                        ],
+                        ),
                       ],
                     ],
-                  ),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 
-  Widget _buildPermissionBanner(BuildContext context, CaptureInboxViewModel vm) {
+  Widget _buildPermissionBanner(
+    BuildContext context,
+    CaptureInboxViewModel vm,
+  ) {
     final theme = Theme.of(context);
     return Card(
       color: theme.colorScheme.errorContainer.withAlpha(90),
@@ -127,7 +148,9 @@ class CaptureInboxView extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     final isExpense = item.type.isExpense;
-    final amountColor = isExpense ? theme.colorScheme.error : theme.colorScheme.primary;
+    final amountColor = isExpense
+        ? theme.colorScheme.error
+        : theme.colorScheme.primary;
     final isDuplicate = item.isPossibleDuplicate;
 
     return Card(
@@ -135,14 +158,16 @@ class CaptureInboxView extends ConsumerWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isDuplicate ? Colors.amber.shade700 : theme.colorScheme.outlineVariant,
+          color: isDuplicate
+              ? Colors.amber.shade700
+              : theme.colorScheme.outlineVariant,
           width: isDuplicate ? 1.5 : 1.0,
         ),
       ),
       color: isDuplicate
           ? (theme.brightness == Brightness.dark
-              ? Colors.amber.withAlpha(20)
-              : const Color(0xFFFFFBEB))
+                ? Colors.amber.withAlpha(20)
+                : const Color(0xFFFFFBEB))
           : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -152,11 +177,16 @@ class CaptureInboxView extends ConsumerWidget {
             if (isDuplicate) ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.amber.withAlpha(35),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.amber.shade700.withAlpha(120)),
+                  border: Border.all(
+                    color: Colors.amber.shade700.withAlpha(120),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -219,7 +249,10 @@ class CaptureInboxView extends ConsumerWidget {
                 children: [
                   if (item.accountLast4 != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(4),
@@ -257,7 +290,8 @@ class CaptureInboxView extends ConsumerWidget {
                           prefilledType: item.type,
                           prefilledCategoryId: item.suggestedCategoryId,
                           prefilledDate: item.occurredAt,
-                          prefilledNote: item.counterparty ?? 'Bank transaction',
+                          prefilledNote:
+                              item.counterparty ?? 'Bank transaction',
                         ),
                       ),
                     );
@@ -289,7 +323,11 @@ class CaptureInboxView extends ConsumerWidget {
                     if (val == 'ignore') {
                       vm.ignoreSender(item.sender);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Ignored all messages from ${item.sender}')),
+                        SnackBar(
+                          content: Text(
+                            'Ignored all messages from ${item.sender}',
+                          ),
+                        ),
                       );
                     }
                   },
@@ -323,7 +361,9 @@ class CaptureInboxView extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
         title: Text(item.counterparty ?? 'Bank transaction'),
-        subtitle: Text('${item.sender} • ${DateFormatter.fullDate(item.occurredAt)}'),
+        subtitle: Text(
+          '${item.sender} • ${DateFormatter.fullDate(item.occurredAt)}',
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -331,7 +371,9 @@ class CaptureInboxView extends ConsumerWidget {
               '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCents(item.amountCents, currency)}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isExpense ? theme.colorScheme.error : theme.colorScheme.primary,
+                color: isExpense
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.primary,
               ),
             ),
             const SizedBox(width: 8),
@@ -340,7 +382,9 @@ class CaptureInboxView extends ConsumerWidget {
                 await vm.undoAutoAdd(item.id);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Auto-added transaction undone')),
+                    const SnackBar(
+                      content: Text('Auto-added transaction undone'),
+                    ),
                   );
                 }
               },
@@ -386,4 +430,3 @@ class CaptureInboxView extends ConsumerWidget {
     );
   }
 }
-

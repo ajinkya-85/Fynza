@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/widgets/category_icon.dart';
 import '../../../../shared/widgets/empty_state.dart';
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/fluid_segmented_control.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../view_models/categories_notifier.dart';
@@ -27,7 +28,9 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     );
 
     if (result != null && mounted) {
-      await ref.read(categoriesNotifierProvider.notifier).addCategory(
+      await ref
+          .read(categoriesNotifierProvider.notifier)
+          .addCategory(
             name: result.name,
             icon: result.icon,
             color: result.color,
@@ -84,138 +87,140 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
           // Categories List
           Expanded(
-            child: categoriesState.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Error: $err')),
-              data: (categories) {
-                final filtered = categories
-                    .where((c) => c.isIncome == _isIncome)
-                    .toList();
+            child: FadingScrollBoundary(
+              child: categoriesState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Center(child: Text('Error: $err')),
+                data: (categories) {
+                  final filtered = categories
+                      .where((c) => c.isIncome == _isIncome)
+                      .toList();
 
-                if (filtered.isEmpty) {
-                  return EmptyState(
-                    icon: Icons.category_outlined,
-                    title: 'No Categories Found',
-                    subtitle: _isIncome
-                        ? 'Add income categories like Salary, Freelance, etc.'
-                        : 'Add expense categories like Groceries, Rent, etc.',
-                    action: FilledButton.tonalIcon(
-                      onPressed: () => _showAddCategoryDialog(_isIncome),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Category'),
-                    ),
-                  );
-                }
-
-                return ListView.separated(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final category = filtered[index];
-                    final catColor = Color(category.color);
-
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? theme.colorScheme.surfaceContainerHighest
-                                .withValues(alpha: 0.35)
-                            : theme.colorScheme.surfaceContainerHigh
-                                .withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.04),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: catColor.withValues(alpha: 0.16),
-                              shape: BoxShape.circle,
-                            ),
-                            child: CategoryIcon(
-                              iconKey: category.icon,
-                              colorValue: category.color,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Text(
-                              category.name,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: -0.1,
-                              ),
-                            ),
-                          ),
-                          PressableScale(
-                            targetScale: 0.88,
-                            enableHaptics: false,
-                            onPressed: () async {
-                              HapticFeedback.selectionClick();
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Delete Category?'),
-                                  content: Text(
-                                    'Are you sure you want to delete "${category.name}"? '
-                                    'Associated transactions will also be deleted.',
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(false),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    FilledButton(
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor:
-                                            theme.colorScheme.error,
-                                      ),
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(true),
-                                      child: const Text('Delete'),
-                                    ),
-                                  ],
-                                ),
-                              );
-
-                              if (confirm == true) {
-                                HapticFeedback.mediumImpact();
-                                await ref
-                                    .read(categoriesNotifierProvider.notifier)
-                                    .deleteCategory(category.id);
-                              }
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 20,
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
-                          ),
-                        ],
+                  if (filtered.isEmpty) {
+                    return EmptyState(
+                      icon: Icons.category_outlined,
+                      title: 'No Categories Found',
+                      subtitle: _isIncome
+                          ? 'Add income categories like Salary, Freelance, etc.'
+                          : 'Add expense categories like Groceries, Rent, etc.',
+                      action: FilledButton.tonalIcon(
+                        onPressed: () => _showAddCategoryDialog(_isIncome),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add Category'),
                       ),
                     );
-                  },
-                );
-              },
+                  }
+
+                  return ListView.separated(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final category = filtered[index];
+                      final catColor = Color(category.color);
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? theme.colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.35)
+                              : theme.colorScheme.surfaceContainerHigh
+                                    .withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.black.withValues(alpha: 0.04),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: catColor.withValues(alpha: 0.16),
+                                shape: BoxShape.circle,
+                              ),
+                              child: CategoryIcon(
+                                iconKey: category.icon,
+                                colorValue: category.color,
+                                size: 22,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                category.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.1,
+                                ),
+                              ),
+                            ),
+                            PressableScale(
+                              targetScale: 0.88,
+                              enableHaptics: false,
+                              onPressed: () async {
+                                HapticFeedback.selectionClick();
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Delete Category?'),
+                                    content: Text(
+                                      'Are you sure you want to delete "${category.name}"? '
+                                      'Associated transactions will also be deleted.',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      FilledButton(
+                                        style: FilledButton.styleFrom(
+                                          backgroundColor:
+                                              theme.colorScheme.error,
+                                        ),
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(true),
+                                        child: const Text('Delete'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  HapticFeedback.mediumImpact();
+                                  await ref
+                                      .read(categoriesNotifierProvider.notifier)
+                                      .deleteCategory(category.id);
+                                }
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: Icon(
+                                  Icons.delete_outline_rounded,
+                                  size: 20,
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ),
         ],

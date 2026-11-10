@@ -9,6 +9,7 @@ import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/transaction_type.dart';
 import '../../../../shared/models/transaction_with_category.dart';
 import '../../../../shared/widgets/category_icon.dart';
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/fluid_segmented_control.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
 import '../../../categories/presentation/view_models/categories_notifier.dart';
@@ -46,9 +47,8 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   @override
   void initState() {
     super.initState();
-    final initialCents = widget.initial?.transaction.amount ??
-        widget.prefilledAmountCents ??
-        0;
+    final initialCents =
+        widget.initial?.transaction.amount ?? widget.prefilledAmountCents ?? 0;
     _amountController = TextEditingController(
       text: initialCents > 0
           ? CurrencyFormatter.centsToDecimalString(initialCents)
@@ -65,8 +65,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
             widget.prefilledDate != null ||
             widget.prefilledNote != null)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final notifier =
-            ref.read(transactionFormNotifierProvider(widget.initial).notifier);
+        final notifier = ref.read(
+          transactionFormNotifierProvider(widget.initial).notifier,
+        );
         if (widget.prefilledAmountCents != null) {
           notifier.setAmount(widget.prefilledAmountCents!);
         }
@@ -125,10 +126,12 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final formState =
-        ref.watch(transactionFormNotifierProvider(widget.initial));
-    final formNotifier =
-        ref.read(transactionFormNotifierProvider(widget.initial).notifier);
+    final formState = ref.watch(
+      transactionFormNotifierProvider(widget.initial),
+    );
+    final formNotifier = ref.read(
+      transactionFormNotifierProvider(widget.initial).notifier,
+    );
     final categoriesState = ref.watch(categoriesNotifierProvider);
     final currency = ref.watch(selectedCurrencyProvider);
 
@@ -160,214 +163,302 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Fluid Segmented Type Control: Expense / Income
-            FluidSegmentedControl<TransactionType>(
-              padding: EdgeInsets.zero,
-              items: const [TransactionType.expense, TransactionType.income],
-              selectedItem: formState.type,
-              onSelectedItemChanged: (type) => formNotifier.setType(type),
-              labelBuilder: (type) => type.isExpense ? 'Expense' : 'Income',
-              iconBuilder: (type) => type.isExpense
-                  ? Icons.arrow_upward_rounded
-                  : Icons.arrow_downward_rounded,
-            ),
-            const SizedBox(height: 20),
-
-            // Hero Optical Amount Display Card
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
-                    : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.04),
-                ),
+      body: FadingScrollBoundary(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Fluid Segmented Type Control: Expense / Income
+              FluidSegmentedControl<TransactionType>(
+                padding: EdgeInsets.zero,
+                items: const [TransactionType.expense, TransactionType.income],
+                selectedItem: formState.type,
+                onSelectedItemChanged: (type) => formNotifier.setType(type),
+                labelBuilder: (type) => type.isExpense ? 'Expense' : 'Income',
+                iconBuilder: (type) => type.isExpense
+                    ? Icons.arrow_upward_rounded
+                    : Icons.arrow_downward_rounded,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Amount',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
+              const SizedBox(height: 20),
+
+              // Hero Optical Amount Display Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? theme.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.35,
+                        )
+                      : theme.colorScheme.surfaceContainerHigh.withValues(
+                          alpha: 0.45,
                         ),
-                      ),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: _amountController,
-                        builder: (context, value, _) {
-                          if (value.text.isEmpty) return const SizedBox.shrink();
-                          return PressableScale(
-                            targetScale: 0.85,
-                            enableHaptics: false,
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              _amountController.clear();
-                              _onAmountChanged('');
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.all(2),
-                              child: Icon(
-                                Icons.cancel_rounded,
-                                size: 18,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.04),
                   ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _amountController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: amountColor,
-                      letterSpacing: -1.0,
-                    ),
-                    cursorRadius: const Radius.circular(2),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Text(
-                          currency.symbol,
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: amountColor.withValues(alpha: 0.7),
-                            letterSpacing: -1.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Amount',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      prefixIconConstraints:
-                          const BoxConstraints(minWidth: 0, minHeight: 0),
-                      hintText: '0.00',
-                      hintStyle: theme.textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withValues(alpha: 0.3),
-                        letterSpacing: -1.0,
-                      ),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      filled: false,
-                    ),
-                    onChanged: _onAmountChanged,
-                  ),
-                  const SizedBox(height: 16),
-                  // Quick increment chips
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: Row(
-                      children: [
-                        _QuickAmountChip(
-                          label: '+50',
-                          onTap: () => _addAmount(50),
-                        ),
-                        const SizedBox(width: 8),
-                        _QuickAmountChip(
-                          label: '+100',
-                          onTap: () => _addAmount(100),
-                        ),
-                        const SizedBox(width: 8),
-                        _QuickAmountChip(
-                          label: '+500',
-                          onTap: () => _addAmount(500),
-                        ),
-                        const SizedBox(width: 8),
-                        _QuickAmountChip(
-                          label: '+1,000',
-                          onTap: () => _addAmount(1000),
-                        ),
-                        const SizedBox(width: 8),
-                        _QuickAmountChip(
-                          label: '+5,000',
-                          onTap: () => _addAmount(5000),
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _amountController,
+                          builder: (context, value, _) {
+                            if (value.text.isEmpty)
+                              return const SizedBox.shrink();
+                            return PressableScale(
+                              targetScale: 0.85,
+                              enableHaptics: false,
+                              onPressed: () {
+                                HapticFeedback.selectionClick();
+                                _amountController.clear();
+                                _onAmountChanged('');
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(2),
+                                child: Icon(
+                                  Icons.cancel_rounded,
+                                  size: 18,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Category Picker
-            Text(
-              'Category',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.1,
-              ),
-            ),
-            const SizedBox(height: 12),
-            categoriesState.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Text('Error loading categories: $err'),
-              data: (categories) {
-                final filtered = categories
-                    .where((c) =>
-                        c.isIncome == (formState.type == TransactionType.income))
-                    .toList();
-
-                if (filtered.isEmpty) {
-                  return Text(
-                    'No categories available for this type.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _amountController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: amountColor,
+                        letterSpacing: -1.0,
+                      ),
+                      cursorRadius: const Radius.circular(2),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                            currency.symbol,
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: amountColor.withValues(alpha: 0.7),
+                              letterSpacing: -1.0,
+                            ),
+                          ),
+                        ),
+                        prefixIconConstraints: const BoxConstraints(
+                          minWidth: 0,
+                          minHeight: 0,
+                        ),
+                        hintText: '0.00',
+                        hintStyle: theme.textTheme.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.3,
+                          ),
+                          letterSpacing: -1.0,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                      ),
+                      onChanged: _onAmountChanged,
                     ),
-                  );
-                }
+                    const SizedBox(height: 16),
+                    // Quick increment chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          _QuickAmountChip(
+                            label: '+50',
+                            onTap: () => _addAmount(50),
+                          ),
+                          const SizedBox(width: 8),
+                          _QuickAmountChip(
+                            label: '+100',
+                            onTap: () => _addAmount(100),
+                          ),
+                          const SizedBox(width: 8),
+                          _QuickAmountChip(
+                            label: '+500',
+                            onTap: () => _addAmount(500),
+                          ),
+                          const SizedBox(width: 8),
+                          _QuickAmountChip(
+                            label: '+1,000',
+                            onTap: () => _addAmount(1000),
+                          ),
+                          const SizedBox(width: 8),
+                          _QuickAmountChip(
+                            label: '+5,000',
+                            onTap: () => _addAmount(5000),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                return Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: filtered.map((cat) {
-                    final isSelected = formState.categoryId == cat.id;
-                    return _CategoryChip(
-                      label: cat.name,
-                      iconKey: cat.icon,
-                      colorValue: cat.color,
-                      isSelected: isSelected,
-                      onTap: () => formNotifier.setCategory(cat.id),
+              // Category Picker
+              Text(
+                'Category',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              const SizedBox(height: 12),
+              categoriesState.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Text('Error loading categories: $err'),
+                data: (categories) {
+                  final filtered = categories
+                      .where(
+                        (c) =>
+                            c.isIncome ==
+                            (formState.type == TransactionType.income),
+                      )
+                      .toList();
+
+                  if (filtered.isEmpty) {
+                    return Text(
+                      'No categories available for this type.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     );
-                  }).toList(),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
+                  }
 
-            // Date Picker Card
-            PressableScale(
-              targetScale: 0.98,
-              onPressed: () => _pickDate(context, formState.date),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  return Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: filtered.map((cat) {
+                      final isSelected = formState.categoryId == cat.id;
+                      return _CategoryChip(
+                        label: cat.name,
+                        iconKey: cat.icon,
+                        colorValue: cat.color,
+                        isSelected: isSelected,
+                        onTap: () => formNotifier.setCategory(cat.id),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // Date Picker Card
+              PressableScale(
+                targetScale: 0.98,
+                onPressed: () => _pickDate(context, formState.date),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? theme.colorScheme.surfaceContainerHighest.withValues(
+                            alpha: 0.35,
+                          )
+                        : theme.colorScheme.surfaceContainerHigh.withValues(
+                            alpha: 0.45,
+                          ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.black.withValues(alpha: 0.04),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.12,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.calendar_today_rounded,
+                          size: 20,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Date',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              DateFormatter.fullDate(formState.date),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Note Input
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.35)
-                      : theme.colorScheme.surfaceContainerHigh
-                          .withValues(alpha: 0.45),
+                      ? theme.colorScheme.surfaceContainerHighest.withValues(
+                          alpha: 0.35,
+                        )
+                      : theme.colorScheme.surfaceContainerHigh.withValues(
+                          alpha: 0.45,
+                        ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark
@@ -375,193 +466,135 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                         : Colors.black.withValues(alpha: 0.04),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.calendar_today_rounded,
-                        size: 20,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Date',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            DateFormatter.fullDate(formState.date),
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.1,
-                            ),
-                          ),
-                        ],
+                child: TextField(
+                  controller: _noteController,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    letterSpacing: -0.1,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    hintText: 'Note (Optional, e.g. Lunch with team)',
+                    hintStyle: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
+                    icon: Icon(
+                      Icons.edit_note_rounded,
+                      size: 24,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  ],
+                  ),
+                  onChanged: formNotifier.setNote,
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
+              const SizedBox(height: 24),
 
-            // Note Input
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? theme.colorScheme.surfaceContainerHighest
-                        .withValues(alpha: 0.35)
-                    : theme.colorScheme.surfaceContainerHigh
-                        .withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withValues(alpha: 0.08)
-                      : Colors.black.withValues(alpha: 0.04),
-                ),
-              ),
-              child: TextField(
-                controller: _noteController,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  letterSpacing: -0.1,
-                ),
-                decoration: InputDecoration(
-                  isDense: true,
-                  border: InputBorder.none,
-                  hintText: 'Note (Optional, e.g. Lunch with team)',
-                  hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.7),
+              // Error message if any
+              if (formState.errorMessage != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
                   ),
-                  icon: Icon(
-                    Icons.edit_note_rounded,
-                    size: 24,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                onChanged: formNotifier.setNote,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Error message if any
-            if (formState.errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.error.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: theme.colorScheme.error.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 18,
-                      color: theme.colorScheme.error,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.error.withValues(alpha: 0.25),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        formState.errorMessage!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                          fontWeight: FontWeight.w600,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        size: 18,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          formState.errorMessage!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+              ],
 
-            // Primary Submit Button with zero-latency PressableScale
-            PressableScale(
-              targetScale: 0.98,
-              onPressed: formState.isSubmitting
-                  ? null
-                  : () async {
-                      HapticFeedback.lightImpact();
-                      final navigator = Navigator.of(context);
-                      final success = await formNotifier.save(
-                        captureIdToConfirm: widget.captureIdToConfirm,
-                      );
-                      if (success && mounted) {
-                        HapticFeedback.mediumImpact();
-                        navigator.pop(true);
-                      }
-                    },
-              child: Container(
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: formState.isSubmitting
-                    ? SizedBox(
-                        height: 22,
-                        width: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: theme.colorScheme.onPrimary,
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            formState.isEditing
-                                ? Icons.check_rounded
-                                : Icons.add_rounded,
+              // Primary Submit Button with zero-latency PressableScale
+              PressableScale(
+                targetScale: 0.98,
+                onPressed: formState.isSubmitting
+                    ? null
+                    : () async {
+                        HapticFeedback.lightImpact();
+                        final navigator = Navigator.of(context);
+                        final success = await formNotifier.save(
+                          captureIdToConfirm: widget.captureIdToConfirm,
+                        );
+                        if (success && mounted) {
+                          HapticFeedback.mediumImpact();
+                          navigator.pop(true);
+                        }
+                      },
+                child: Container(
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: formState.isSubmitting
+                      ? SizedBox(
+                          height: 22,
+                          width: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
                             color: theme.colorScheme.onPrimary,
-                            size: 20,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            formState.isEditing
-                                ? 'Save Changes'
-                                : 'Add Transaction',
-                            style: theme.textTheme.titleSmall?.copyWith(
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              formState.isEditing
+                                  ? Icons.check_rounded
+                                  : Icons.add_rounded,
                               color: theme.colorScheme.onPrimary,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.1,
+                              size: 20,
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 8),
+                            Text(
+                              formState.isEditing
+                                  ? 'Save Changes'
+                                  : 'Add Transaction',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: theme.colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );
@@ -573,10 +606,7 @@ class _QuickAmountChip extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _QuickAmountChip({
-    required this.label,
-    required this.onTap,
-  });
+  const _QuickAmountChip({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -642,14 +672,14 @@ class _CategoryChip extends StatelessWidget {
     final bgColor = isSelected
         ? catColor.withValues(alpha: isDark ? 0.25 : 0.15)
         : (isDark
-            ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
-            : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5));
+              ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+              : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5));
 
     final borderColor = isSelected
         ? catColor
         : (isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.black.withValues(alpha: 0.06));
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.black.withValues(alpha: 0.06));
 
     final textColor = isSelected
         ? (isDark ? Colors.white : catColor)
@@ -669,10 +699,7 @@ class _CategoryChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor,
-            width: isSelected ? 2.0 : 1.0,
-          ),
+          border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.0),
           boxShadow: isSelected
               ? [
                   BoxShadow(

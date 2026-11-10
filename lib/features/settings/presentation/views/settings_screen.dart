@@ -4,6 +4,7 @@ import '../../../../core/constants/capture_constants.dart';
 import '../../../../core/services/currency_service.dart';
 import '../../../../shared/models/app_currency.dart';
 import '../../../../core/di/database_provider.dart';
+import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../auto_capture/presentation/views/auto_capture_settings_view.dart';
 import '../../../backup/presentation/views/data_and_storage_view.dart';
 
@@ -56,223 +57,230 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ),
-      body: ListView(
-        children: [
-          const SizedBox(height: 8),
-          const _SectionHeader(label: 'Currency Setting'),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () {
-                setState(() {
-                  _isCurrencyExpanded = !_isCurrencyExpanded;
-                });
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header row with icon, label, and current badge
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.currency_exchange_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Currency',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w600,
+      body: FadingScrollBoundary(
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          children: [
+            const SizedBox(height: 8),
+            const _SectionHeader(label: 'Currency Setting'),
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    _isCurrencyExpanded = !_isCurrencyExpanded;
+                  });
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header row with icon, label, and current badge
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.currency_exchange_outlined,
+                            color: theme.colorScheme.primary,
                           ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '$badgeSymbol  $badgeCode',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onPrimaryContainer,
-                              fontWeight: FontWeight.bold,
+                          const SizedBox(width: 12),
+                          Text(
+                            'Currency',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          _isCurrencyExpanded
-                              ? Icons.keyboard_arrow_up_rounded
-                              : Icons.keyboard_arrow_down_rounded,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '$badgeSymbol  $badgeCode',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            _isCurrencyExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
 
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      alignment: Alignment.topCenter,
-                      child: _isCurrencyExpanded
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Choose the currency used throughout the app',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        alignment: Alignment.topCenter,
+                        child: _isCurrencyExpanded
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Choose the currency used throughout the app',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                                // Grid of currency chips
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: AppCurrency.values.map((currency) {
-                                    final isSelected =
-                                        currency == selectedCurrency;
-                                    final isCustom =
-                                        currency == AppCurrency.custom;
+                                  const SizedBox(height: 16),
+                                  // Grid of currency chips
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: AppCurrency.values.map((
+                                      currency,
+                                    ) {
+                                      final isSelected =
+                                          currency == selectedCurrency;
+                                      final isCustom =
+                                          currency == AppCurrency.custom;
 
-                                    String displaySymbol = currency.symbol;
-                                    String displayCode = currency.code;
-                                    IconData? overrideIcon;
+                                      String displaySymbol = currency.symbol;
+                                      String displayCode = currency.code;
+                                      IconData? overrideIcon;
 
-                                    if (isCustom) {
-                                      if (customDetails != null) {
-                                        displaySymbol = customDetails.symbol;
-                                        displayCode = customDetails.code;
-                                      } else {
-                                        displaySymbol = '?';
-                                        displayCode = 'OTHER';
-                                        overrideIcon = Icons.edit_rounded;
-                                      }
-                                    }
-
-                                    return _CurrencyChip(
-                                      symbol: displaySymbol,
-                                      code: displayCode,
-                                      icon: overrideIcon,
-                                      isSelected: isSelected,
-                                      onTap: () {
-                                        if (isCustom) {
-                                          _showCustomCurrencyDialog(
-                                            context,
-                                            currentDetails: customDetails,
-                                            onSave: (details) async {
-                                              await customNotifier.setDetails(
-                                                details,
-                                              );
-                                              await currencyNotifier
-                                                  .setCurrency(
-                                                    AppCurrency.custom,
-                                                  );
-                                              setState(() {
-                                                _isCurrencyExpanded = false;
-                                              });
-                                            },
-                                            onDelete: () async {
-                                              await customNotifier
-                                                  .clearDetails();
-                                              await currencyNotifier
-                                                  .setCurrency(AppCurrency.usd);
-                                              setState(() {
-                                                _isCurrencyExpanded = false;
-                                              });
-                                            },
-                                          );
+                                      if (isCustom) {
+                                        if (customDetails != null) {
+                                          displaySymbol = customDetails.symbol;
+                                          displayCode = customDetails.code;
                                         } else {
-                                          currencyNotifier.setCurrency(
-                                            currency,
-                                          );
-                                          setState(() {
-                                            _isCurrencyExpanded = false;
-                                          });
+                                          displaySymbol = '?';
+                                          displayCode = 'OTHER';
+                                          overrideIcon = Icons.edit_rounded;
                                         }
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                              ],
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
+                                      }
+
+                                      return _CurrencyChip(
+                                        symbol: displaySymbol,
+                                        code: displayCode,
+                                        icon: overrideIcon,
+                                        isSelected: isSelected,
+                                        onTap: () {
+                                          if (isCustom) {
+                                            _showCustomCurrencyDialog(
+                                              context,
+                                              currentDetails: customDetails,
+                                              onSave: (details) async {
+                                                await customNotifier.setDetails(
+                                                  details,
+                                                );
+                                                await currencyNotifier
+                                                    .setCurrency(
+                                                      AppCurrency.custom,
+                                                    );
+                                                setState(() {
+                                                  _isCurrencyExpanded = false;
+                                                });
+                                              },
+                                              onDelete: () async {
+                                                await customNotifier
+                                                    .clearDetails();
+                                                await currencyNotifier
+                                                    .setCurrency(
+                                                      AppCurrency.usd,
+                                                    );
+                                                setState(() {
+                                                  _isCurrencyExpanded = false;
+                                                });
+                                              },
+                                            );
+                                          } else {
+                                            currencyNotifier.setCurrency(
+                                              currency,
+                                            );
+                                            setState(() {
+                                              _isCurrencyExpanded = false;
+                                            });
+                                          }
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const _SectionHeader(label: 'Data & Storage'),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: ListTile(
-              leading: Icon(
-                Icons.storage_rounded,
-                color: theme.colorScheme.primary,
-              ),
-              title: const Text('Data and storage'),
-              subtitle: const Text('Backup, restore, and automatic backups'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const DataAndStorageView(),
-                  ),
-                );
-              },
-            ),
-          ),
-          if (CaptureConstants.isEnabled) ...[
             const SizedBox(height: 16),
-            const _SectionHeader(label: 'Automation'),
+            const _SectionHeader(label: 'Data & Storage'),
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: ListTile(
                 leading: Icon(
-                  Icons.sms_outlined,
+                  Icons.storage_rounded,
                   color: theme.colorScheme.primary,
                 ),
-                title: const Text('Auto-capture transactions'),
-                subtitle: Text(
-                  ref.watch(autoCaptureEnabledProvider)
-                      ? 'Read bank SMS & payment notifications (On)'
-                      : 'Turned off',
-                ),
+                title: const Text('Data and storage'),
+                subtitle: const Text('Backup, restore, and automatic backups'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const AutoCaptureSettingsView(),
+                      builder: (_) => const DataAndStorageView(),
                     ),
                   );
                 },
               ),
             ),
-          ],
-          const SizedBox(height: 16),
-          const _SectionHeader(label: 'About'),
-          Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: ListTile(
-              leading: Icon(
-                Icons.info_outline,
-                color: theme.colorScheme.primary,
+            if (CaptureConstants.isEnabled) ...[
+              const SizedBox(height: 16),
+              const _SectionHeader(label: 'Automation'),
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: ListTile(
+                  leading: Icon(
+                    Icons.sms_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  title: const Text('Auto-capture transactions'),
+                  subtitle: Text(
+                    ref.watch(autoCaptureEnabledProvider)
+                        ? 'Read bank SMS & payment notifications (On)'
+                        : 'Turned off',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AutoCaptureSettingsView(),
+                      ),
+                    );
+                  },
+                ),
               ),
-              title: const Text('Fynza'),
-              subtitle: const Text('Expense tracker — v1.0.0'),
+            ],
+            const SizedBox(height: 16),
+            const _SectionHeader(label: 'About'),
+            Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: ListTile(
+                leading: Icon(
+                  Icons.info_outline,
+                  color: theme.colorScheme.primary,
+                ),
+                title: const Text('Fynza'),
+                subtitle: const Text('Expense tracker — v1.0.0'),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-        ],
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -316,128 +324,109 @@ void _showCustomCurrencyDialog(
       final theme = Theme.of(ctx);
       return Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.currency_exchange_rounded,
-                      size: 28,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Custom Currency',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Enter your preferred currency details',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  TextFormField(
-                    controller: symbolCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Symbol',
-                      hintText: 'e.g.  kr,  \u20ba,  \u0e3f',
-                      prefixIcon: Icon(Icons.paid_outlined),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: codeCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      labelText: 'Currency Code',
-                      hintText: 'e.g.  NOK,  TRY,  THB',
-                      prefixIcon: Icon(Icons.tag_rounded),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Currency Name',
-                      hintText: 'e.g.  Norwegian Krone',
-                      prefixIcon: Icon(Icons.label_outline_rounded),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 28),
-                  FilledButton(
-                    onPressed: () async {
-                      if (formKey.currentState?.validate() ?? false) {
-                        final details = CustomCurrencyDetails(
-                          symbol: symbolCtrl.text.trim(),
-                          code: codeCtrl.text.trim().toUpperCase(),
-                          name: nameCtrl.text.trim(),
-                        );
-                        Navigator.of(ctx).pop();
-                        await onSave(details);
-                      }
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+        child: FadingScrollBoundary(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.currency_exchange_rounded,
+                        size: 28,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                    child: const Text(
-                      'Save Currency',
-                      style: TextStyle(
+                    const SizedBox(height: 16),
+                    Text(
+                      'Custom Currency',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
+                    const SizedBox(height: 4),
+                    Text(
+                      'Enter your preferred currency details',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  if (currentDetails != null) ...[
-                    const SizedBox(height: 8),
-                    TextButton(
+                    const SizedBox(height: 28),
+                    TextFormField(
+                      controller: symbolCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Symbol',
+                        hintText: 'e.g.  kr,  \u20ba,  \u0e3f',
+                        prefixIcon: Icon(Icons.paid_outlined),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: codeCtrl,
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: const InputDecoration(
+                        labelText: 'Currency Code',
+                        hintText: 'e.g.  NOK,  TRY,  THB',
+                        prefixIcon: Icon(Icons.tag_rounded),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Currency Name',
+                        hintText: 'e.g.  Norwegian Krone',
+                        prefixIcon: Icon(Icons.label_outline_rounded),
+                      ),
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 28),
+                    FilledButton(
                       onPressed: () async {
-                        Navigator.of(ctx).pop();
-                        await onDelete();
+                        if (formKey.currentState?.validate() ?? false) {
+                          final details = CustomCurrencyDetails(
+                            symbol: symbolCtrl.text.trim(),
+                            code: codeCtrl.text.trim().toUpperCase(),
+                            name: nameCtrl.text.trim(),
+                          );
+                          Navigator.of(ctx).pop();
+                          await onSave(details);
+                        }
                       },
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Currency',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -445,15 +434,37 @@ void _showCustomCurrencyDialog(
                         ),
                       ),
                       child: Text(
-                        'Delete Custom Currency',
+                        'Cancel',
                         style: TextStyle(
-                          color: theme.colorScheme.error,
+                          color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    if (currentDetails != null) ...[
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          await onDelete();
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Delete Custom Currency',
+                          style: TextStyle(
+                            color: theme.colorScheme.error,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

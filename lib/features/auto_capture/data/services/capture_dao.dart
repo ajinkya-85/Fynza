@@ -15,8 +15,8 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
     return (select(capturedTransactions)
           ..where((t) => t.status.equals(CaptureStatus.pending.name))
           ..orderBy([
-            (t) => OrderingTerm(
-                expression: t.occurredAt, mode: OrderingMode.desc)
+            (t) =>
+                OrderingTerm(expression: t.occurredAt, mode: OrderingMode.desc),
           ]))
         .watch();
   }
@@ -34,12 +34,14 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
   /// Watches recently auto-added / confirmed transactions.
   Stream<List<CapturedTransaction>> watchRecentlyAutoAdded({int limit = 10}) {
     return (select(capturedTransactions)
-          ..where((t) =>
-              t.status.equals(CaptureStatus.confirmed.name) &
-              t.transactionId.isNotNull())
+          ..where(
+            (t) =>
+                t.status.equals(CaptureStatus.confirmed.name) &
+                t.transactionId.isNotNull(),
+          )
           ..orderBy([
-            (t) => OrderingTerm(
-                expression: t.capturedAt, mode: OrderingMode.desc)
+            (t) =>
+                OrderingTerm(expression: t.capturedAt, mode: OrderingMode.desc),
           ])
           ..limit(limit))
         .watch();
@@ -47,16 +49,28 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
 
   /// Inserts a captured transaction row with insert-or-ignore (dedupe via UNIQUE constraint).
   Future<int> insertCaptureOrIgnore(CapturedTransactionsCompanion entry) {
-    return into(capturedTransactions).insert(
-      entry,
-      mode: InsertMode.insertOrIgnore,
-    );
+    return into(
+      capturedTransactions,
+    ).insert(entry, mode: InsertMode.insertOrIgnore);
+  }
+
+  /// Inserts a capture row and fails on a duplicate dedupe key.
+  Future<int> insertCapture(CapturedTransactionsCompanion entry) {
+    return into(capturedTransactions).insert(entry);
+  }
+
+  /// Finds an existing capture by its stable deduplication key.
+  Future<CapturedTransaction?> getCaptureByDedupeKey(String dedupeKey) {
+    return (select(
+      capturedTransactions,
+    )..where((t) => t.dedupeKey.equals(dedupeKey))).getSingleOrNull();
   }
 
   /// Finds a captured transaction by ID.
   Future<CapturedTransaction?> getCaptureById(int id) {
-    return (select(capturedTransactions)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      capturedTransactions,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Updates status of a captured transaction.
@@ -87,15 +101,16 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
 
   /// Dismisses all pending items from a specific sender.
   Future<int> dismissPendingBySender(String sender) {
-    return (update(capturedTransactions)
-          ..where((t) =>
+    return (update(capturedTransactions)..where(
+          (t) =>
               t.sender.equals(sender) &
-              t.status.equals(CaptureStatus.pending.name)))
+              t.status.equals(CaptureStatus.pending.name),
+        ))
         .write(
-      const CapturedTransactionsCompanion(
-        status: Value(CaptureStatus.dismissed),
-      ),
-    );
+          const CapturedTransactionsCompanion(
+            status: Value(CaptureStatus.dismissed),
+          ),
+        );
   }
 
   /// Deletes all captured transactions.
@@ -112,10 +127,12 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
     final start = date.subtract(const Duration(hours: 24));
     final end = date.add(const Duration(hours: 24));
     final query = db.select(db.transactions)
-      ..where((t) =>
-          t.amount.equals(amountCents) &
-          t.date.isBiggerOrEqualValue(start) &
-          t.date.isSmallerOrEqualValue(end))
+      ..where(
+        (t) =>
+            t.amount.equals(amountCents) &
+            t.date.isBiggerOrEqualValue(start) &
+            t.date.isSmallerOrEqualValue(end),
+      )
       ..limit(1);
     final match = await query.getSingleOrNull();
     return match != null;
@@ -123,11 +140,12 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
 
   /// Purges confirmed and dismissed captures older than 90 days.
   Future<int> purgeOldCaptures(DateTime olderThan) {
-    return (delete(capturedTransactions)
-          ..where((t) =>
+    return (delete(capturedTransactions)..where(
+          (t) =>
               (t.status.equals(CaptureStatus.confirmed.name) |
                   t.status.equals(CaptureStatus.dismissed.name)) &
-              t.capturedAt.isSmallerThanValue(olderThan)))
+              t.capturedAt.isSmallerThanValue(olderThan),
+        ))
         .go();
   }
 
@@ -135,9 +153,11 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
 
   /// Looks up suggested category for normalized counterparty.
   Future<int?> getSuggestedCategory(String normalizedCounterparty) async {
-    final rule = await (select(counterpartyRules)
-          ..where((t) => t.normalizedCounterparty.equals(normalizedCounterparty)))
-        .getSingleOrNull();
+    final rule =
+        await (select(counterpartyRules)..where(
+              (t) => t.normalizedCounterparty.equals(normalizedCounterparty),
+            ))
+            .getSingleOrNull();
     return rule?.categoryId;
   }
 

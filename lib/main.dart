@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/services/currency_service.dart';
 import 'core/theme/app_theme.dart';
+import 'core/constants/capture_constants.dart';
 import 'features/auto_capture/data/services/capture_preferences_service.dart';
+import 'features/auto_capture/data/services/auto_capture_scheduler.dart';
 import 'features/backup/data/services/auto_backup_scheduler.dart';
 import 'features/backup/data/services/backup_preferences_service.dart';
 import 'features/navigation/presentation/views/main_scaffold.dart';
@@ -16,8 +18,9 @@ void main() async {
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        capturePreferencesServiceProvider
-            .overrideWithValue(CapturePreferencesService(prefs)),
+        capturePreferencesServiceProvider.overrideWithValue(
+          CapturePreferencesService(prefs),
+        ),
       ],
       child: const FynzaApp(),
     ),
@@ -27,8 +30,11 @@ void main() async {
   try {
     final scheduler = AutoBackupScheduler(BackupPreferencesService(prefs));
     await scheduler.initialize();
+    if (CaptureConstants.isEnabled) {
+      await AutoCaptureScheduler.registerPeriodicDrain();
+    }
   } catch (e) {
-    debugPrint('AutoBackupScheduler initialization skipped or deferred: $e');
+    debugPrint('Background task initialization failed: ${e.runtimeType}');
   }
 }
 

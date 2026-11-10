@@ -1,11 +1,13 @@
 package io.fynza.app.autocapture
 
 import android.content.Context
+import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
 object AutoCaptureQueue {
+    private const val TAG = "AutoCaptureQueue"
     private const val QUEUE_FILENAME = "autocapture_queue.json"
     private const val STAGING_FILENAME = "autocapture_staging.json"
     private const val MAX_ENTRIES = 500
@@ -17,7 +19,8 @@ object AutoCaptureQueue {
         packageName: String,
         title: String,
         text: String,
-        postTime: Long
+        postTime: Long,
+        isSmsApp: Boolean
     ) {
         synchronized(lock) {
             try {
@@ -26,6 +29,7 @@ object AutoCaptureQueue {
                     try {
                         JSONArray(file.readText())
                     } catch (e: Exception) {
+                        Log.w(TAG, "Unable to read existing queue; starting a new queue", e)
                         JSONArray()
                     }
                 } else {
@@ -38,6 +42,7 @@ object AutoCaptureQueue {
                     put("title", title)
                     put("text", text)
                     put("postTime", postTime)
+                    put("isSmsApp", isSmsApp)
                 }
 
                 jsonArray.put(item)
@@ -56,7 +61,7 @@ object AutoCaptureQueue {
 
                 file.writeText(trimmedArray.toString())
             } catch (e: Exception) {
-                // Never crash service
+                Log.e(TAG, "Failed to persist notification queue", e)
             }
         }
     }
@@ -77,6 +82,7 @@ object AutoCaptureQueue {
                     stagingFile.writeBytes(queueFile.readBytes())
                     queueFile.delete()
                 } catch (e: Exception) {
+                    Log.e(TAG, "Failed to stage notification queue for draining", e)
                     return emptyList()
                 }
             }
@@ -93,13 +99,15 @@ object AutoCaptureQueue {
                             "packageName" to obj.optString("packageName", ""),
                             "title" to obj.optString("title", ""),
                             "text" to obj.optString("text", ""),
-                            "postTime" to obj.optLong("postTime", System.currentTimeMillis())
+                            "postTime" to obj.optLong("postTime", System.currentTimeMillis()),
+                            "isSmsApp" to obj.optBoolean("isSmsApp", false)
                         )
                         list.add(map)
                     }
                     stagingFile.delete()
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Failed to read staged notification queue", e)
                 stagingFile.delete()
             }
 
@@ -107,4 +115,3 @@ object AutoCaptureQueue {
         }
     }
 }
-

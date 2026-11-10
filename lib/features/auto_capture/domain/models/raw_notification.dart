@@ -5,6 +5,7 @@ class RawNotification {
   final String title;
   final String text;
   final int postTime; // Epoch milliseconds
+  final bool isSmsApp;
 
   const RawNotification({
     required this.key,
@@ -12,6 +13,7 @@ class RawNotification {
     required this.title,
     required this.text,
     required this.postTime,
+    this.isSmsApp = false,
   });
 
   factory RawNotification.fromMap(Map<String, dynamic> map) {
@@ -20,15 +22,18 @@ class RawNotification {
       packageName: map['packageName'] as String? ?? '',
       title: map['title'] as String? ?? '',
       text: map['text'] as String? ?? '',
-      postTime: map['postTime'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      postTime:
+          map['postTime'] as int? ?? DateTime.now().millisecondsSinceEpoch,
+      isSmsApp: map['isSmsApp'] as bool? ?? false,
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'key': key,
-        'packageName': packageName,
-        'title': title,
-        'text': text,
-        'postTime': postTime,
-      };
+    'key': key,
+    'packageName': packageName,
+    'title': title,
+    'text': text,
+    'postTime': postTime,
+    'isSmsApp': isSmsApp,
+  };
 }

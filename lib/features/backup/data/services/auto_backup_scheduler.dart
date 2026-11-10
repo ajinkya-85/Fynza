@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
+import '../../../../core/constants/capture_constants.dart';
 import '../../../../core/services/currency_service.dart';
 import '../../../../data/db/app_database.dart';
 import '../../../auto_capture/data/services/auto_capture_scheduler.dart';
@@ -15,6 +16,7 @@ import 'backup_file_service.dart';
 import 'backup_preferences_service.dart';
 
 const String autoBackupTaskName = 'expense_tracker_auto_backup';
+const String autoBackupTaskType = 'auto_backup_periodic';
 
 /// Pure function to determine whether an automatic backup should run.
 bool shouldRunAutoBackup(
@@ -39,12 +41,19 @@ void callbackDispatcher() {
       WidgetsFlutterBinding.ensureInitialized();
       final prefs = await SharedPreferences.getInstance();
 
-      if (taskName == autoCaptureTaskName) {
+      if (taskName == autoCaptureTaskType) {
+        final capturePrefs = CapturePreferencesService(prefs);
+        if (!CaptureConstants.isEnabled || !capturePrefs.isMasterEnabled()) {
+          return true;
+        }
+
         final db = AppDatabase();
         try {
-          final capturePrefs = CapturePreferencesService(prefs);
           final captureService = NotificationCaptureServiceImpl();
-          final captureRepo = CaptureRepositoryImpl(db: db, prefs: capturePrefs);
+          final captureRepo = CaptureRepositoryImpl(
+            db: db,
+            prefs: capturePrefs,
+          );
           final notifications = await captureService.drain();
           if (notifications.isNotEmpty) {
             await captureRepo.ingest(notifications);
@@ -54,6 +63,8 @@ void callbackDispatcher() {
         }
         return true;
       }
+
+      if (taskName != autoBackupTaskType) return false;
 
       final prefService = BackupPreferencesService(prefs);
       final currencyService = CurrencyService(prefs);
@@ -73,7 +84,8 @@ void callbackDispatcher() {
         await db.close();
       }
       return true;
-    } catch (_) {
+    } catch (error) {
+      debugPrint('Background task failed: ${error.runtimeType}');
       return false;
     }
   });
@@ -83,18 +95,16 @@ class AutoBackupScheduler {
   final Workmanager _workmanager;
   final BackupPreferencesService _prefsService;
 
-  AutoBackupScheduler(
-    this._prefsService, {
-    Workmanager? workmanager,
-  }) : _workmanager = workmanager ?? Workmanager();
+  AutoBackupScheduler(this._prefsService, {Workmanager? workmanager})
+    : _workmanager = workmanager ?? Workmanager();
 
   /// Initializes workmanager on app launch.
   Future<void> initialize() async {
     try {
-      await _workmanager.initialize(
-        callbackDispatcher,
-      );
-    } catch (_) {}
+      await _workmanager.initialize(callbackDispatcher);
+    } catch (error) {
+      debugPrint('Workmanager initialization failed: ${error.runtimeType}');
+    }
   }
 
   /// Updates the periodic work schedule when frequency is changed.
@@ -110,12 +120,10 @@ class AutoBackupScheduler {
         await _workmanager
             .registerPeriodicTask(
               autoBackupTaskName,
-              'auto_backup_periodic',
+              autoBackupTaskType,
               frequency: Duration(hours: frequency.hours),
               existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
-              constraints: Constraints(
-                networkType: NetworkType.notRequired,
-              ),
+              constraints: Constraints(networkType: NetworkType.notRequired),
             )
             .timeout(const Duration(milliseconds: 500));
       }

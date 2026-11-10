@@ -6,12 +6,15 @@ import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.provider.Telephony
+import android.util.Log
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 
 class SmsNotificationListenerService : NotificationListenerService() {
 
     companion object {
+        private const val TAG = "FynzaAutoCapture"
+
         // Fallback list of well-known SMS package names
         private val KNOWN_SMS_PACKAGES = setOf(
             "com.google.android.apps.messaging",
@@ -61,7 +64,7 @@ class SmsNotificationListenerService : NotificationListenerService() {
         try {
             // Check master switch from SharedPreferences
             val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val isEnabled = prefs.getBoolean(KEY_MASTER_ENABLED, true)
+            val isEnabled = prefs.getBoolean(KEY_MASTER_ENABLED, false)
             if (!isEnabled) return
 
             val packageName = sbn.packageName ?: return
@@ -114,10 +117,11 @@ class SmsNotificationListenerService : NotificationListenerService() {
                 packageName = packageName,
                 title = title,
                 text = text,
-                postTime = postTime
+                postTime = postTime,
+                isSmsApp = isSmsApp
             )
         } catch (e: Exception) {
-            // Keep listener safe and silent
+            Log.e(TAG, "Failed to process a notification", e)
         }
     }
 
@@ -163,8 +167,8 @@ class SmsNotificationListenerService : NotificationListenerService() {
             try {
                 requestRebind(ComponentName(this, SmsNotificationListenerService::class.java))
             } catch (e: Exception) {
+                Log.w(TAG, "Failed to request notification listener rebind", e)
             }
         }
     }
 }
-

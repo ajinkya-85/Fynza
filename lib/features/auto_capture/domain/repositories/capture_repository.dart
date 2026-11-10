@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/capture_constants.dart';
@@ -35,7 +36,9 @@ abstract class CaptureRepository {
   Future<void> undoAutoAdd(int captureId);
   Future<void> ignoreSender(String sender);
   Future<void> deleteAllCapturedData();
-  Future<void> purgeOldCaptures({Duration retentionPeriod = const Duration(days: 90)});
+  Future<void> purgeOldCaptures({
+    Duration retentionPeriod = const Duration(days: 90),
+  });
   Future<int?> getSuggestedCategory(String counterparty);
 }
 
@@ -50,9 +53,9 @@ class CaptureRepositoryImpl implements CaptureRepository {
     required this._prefs,
     CaptureDao? dao,
     SmsTransactionParser? parser,
-  })  : _db = db,
-        _dao = dao ?? db.captureDao,
-        _parser = parser ?? const SmsTransactionParser();
+  }) : _db = db,
+       _dao = dao ?? db.captureDao,
+       _parser = parser ?? const SmsTransactionParser();
 
   @override
   Stream<List<CaptureItem>> watchPendingCaptures() {
@@ -60,18 +63,23 @@ class CaptureRepositoryImpl implements CaptureRepository {
       final items = <CaptureItem>[];
       for (var i = 0; i < list.length; i++) {
         final t = list[i];
-        final isDuplicateInBatch = list.asMap().entries.any((entry) =>
-            entry.key != i &&
-            entry.value.amountCents == t.amountCents &&
-            entry.value.occurredAt.difference(t.occurredAt).abs().inHours <= 24);
+        final isDuplicateInBatch = list.asMap().entries.any(
+          (entry) =>
+              entry.key != i &&
+              entry.value.amountCents == t.amountCents &&
+              entry.value.occurredAt.difference(t.occurredAt).abs().inHours <=
+                  24,
+        );
         final hasDbMatch = await _dao.hasMatchingLoggedTransaction(
           amountCents: t.amountCents,
           date: t.occurredAt,
         );
-        items.add(_mapToDomain(
-          t,
-          isPossibleDuplicate: isDuplicateInBatch || hasDbMatch,
-        ));
+        items.add(
+          _mapToDomain(
+            t,
+            isPossibleDuplicate: isDuplicateInBatch || hasDbMatch,
+          ),
+        );
       }
       return items;
     });
@@ -96,8 +104,10 @@ class CaptureRepositoryImpl implements CaptureRepository {
     for (final raw in notifications) {
       try {
         await _ingestSingle(raw);
-      } catch (_) {
-        // Never throw to caller, catch per item without logging sensitive text
+      } catch (error) {
+        debugPrint(
+          'Auto-capture failed to process a notification: ${error.runtimeType}',
+        );
       }
     }
   }
@@ -105,7 +115,8 @@ class CaptureRepositoryImpl implements CaptureRepository {
   Future<void> _ingestSingle(RawNotification raw) async {
     // 1. Source gate: SMS or Payment app package check
     final pkg = raw.packageName.trim().toLowerCase();
-    final isSupported = CaptureConstants.isSupportedPackage(pkg);
+    final isSupported =
+        raw.isSmsApp || CaptureConstants.isSupportedPackage(pkg);
     if (!isSupported) {
       return;
     }
@@ -114,8 +125,11 @@ class CaptureRepositoryImpl implements CaptureRepository {
     // If from a payment/banking app, the app or transaction title is valid.
     // If from an SMS app, enforce bank alphanumeric header.
     final sender = raw.title.trim();
-    final isPaymentApp = CaptureConstants.knownPaymentPackages.any(
-          (known) => pkg.contains(known.toLowerCase()) || known.toLowerCase().contains(pkg),
+    final isPaymentApp =
+        CaptureConstants.knownPaymentPackages.any(
+          (known) =>
+              pkg.contains(known.toLowerCase()) ||
+              known.toLowerCase().contains(pkg),
         ) ||
         pkg.contains('pay') ||
         pkg.contains('upi');
@@ -147,12 +161,17 @@ class CaptureRepositoryImpl implements CaptureRepository {
 
     final mode = _prefs.getMode();
     final isAutoAddEligible =
-        mode.isAddAutomatically && parseResult.confidence == ParseConfidence.high && suggestedCatId != null;
+        mode.isAddAutomatically &&
+        parseResult.confidence == ParseConfidence.high &&
+        suggestedCatId != null;
 
     if (isAutoAddEligible) {
-      // In ONE Drift transaction: insert transaction, insert captured_transaction confirmed
       await _db.transaction(() async {
-        final txId = await _db.into(_db.transactions).insert(
+        if (await _dao.getCaptureByDedupeKey(dedupeKey) != null) return;
+
+        final txId = await _db
+            .into(_db.transactions)
+            .insert(
               TransactionsCompanion.insert(
                 amount: parseResult.amountCents,
                 type: parseResult.type,
@@ -162,7 +181,7 @@ class CaptureRepositoryImpl implements CaptureRepository {
               ),
             );
 
-        await _dao.insertCaptureOrIgnore(
+        await _dao.insertCapture(
           CapturedTransactionsCompanion.insert(
             amountCents: parseResult.amountCents,
             type: parseResult.type,
@@ -220,7 +239,9 @@ class CaptureRepositoryImpl implements CaptureRepository {
 
     await _db.transaction(() async {
       // Insert transaction
-      final txId = await _db.into(_db.transactions).insert(
+      final txId = await _db
+          .into(_db.transactions)
+          .insert(
             TransactionsCompanion.insert(
               amount: effectiveAmount,
               type: effectiveType,
@@ -238,7 +259,8 @@ class CaptureRepositoryImpl implements CaptureRepository {
       );
 
       // Update counterparty lookup rule
-      if (capture.counterparty != null && capture.counterparty!.trim().isNotEmpty) {
+      if (capture.counterparty != null &&
+          capture.counterparty!.trim().isNotEmpty) {
         final norm = _normalizeCounterparty(capture.counterparty!);
         await _dao.setSuggestedCategory(norm, categoryId);
       }
@@ -262,7 +284,9 @@ class CaptureRepositoryImpl implements CaptureRepository {
 
     await _db.transaction(() async {
       // Delete transaction
-      await (_db.delete(_db.transactions)..where((t) => t.id.equals(capture.transactionId!))).go();
+      await (_db.delete(
+        _db.transactions,
+      )..where((t) => t.id.equals(capture.transactionId!))).go();
 
       // Dismiss capture row
       await _dao.updateCaptureStatus(captureId, CaptureStatus.dismissed);
@@ -281,7 +305,9 @@ class CaptureRepositoryImpl implements CaptureRepository {
   }
 
   @override
-  Future<void> purgeOldCaptures({Duration retentionPeriod = const Duration(days: 90)}) async {
+  Future<void> purgeOldCaptures({
+    Duration retentionPeriod = const Duration(days: 90),
+  }) async {
     final cutoff = DateTime.now().subtract(retentionPeriod);
     await _dao.purgeOldCaptures(cutoff);
   }
@@ -300,7 +326,10 @@ class CaptureRepositoryImpl implements CaptureRepository {
     if (RegExp(r'^\d+$').hasMatch(digitsOnly)) return false;
 
     // Check for standard hyphenated Indian header e.g. "AD-HDFCBK", "VK-SBI"
-    if (RegExp(r'^[A-Za-z]{2}-[A-Za-z0-9]{3,8}', caseSensitive: false).hasMatch(sender)) {
+    if (RegExp(
+      r'^[A-Za-z]{2}-[A-Za-z0-9]{3,8}',
+      caseSensitive: false,
+    ).hasMatch(sender)) {
       return true;
     }
 
@@ -320,7 +349,10 @@ class CaptureRepositoryImpl implements CaptureRepository {
         .trim();
   }
 
-  CaptureItem _mapToDomain(CapturedTransaction t, {bool isPossibleDuplicate = false}) {
+  CaptureItem _mapToDomain(
+    CapturedTransaction t, {
+    bool isPossibleDuplicate = false,
+  }) {
     return CaptureItem(
       id: t.id,
       amountCents: t.amountCents,

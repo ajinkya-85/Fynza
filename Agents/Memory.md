@@ -152,6 +152,12 @@ Key locations:
 - **Capture Modes & Master Toggle**:
   - Master switch OFF by default (opt-in privacy). Controlled via `autoCaptureEnabledProvider`.
   - Modes: `reviewFirst` (default) and `addAutomatically`.
+- **Auto-Capture Reliability**:
+  - The periodic Workmanager drain is registered at app startup after Workmanager initialization and dispatched using the worker's task type (`auto_capture_periodic`).
+  - Background and foreground drains leave the native queue untouched while the master switch is off; Android and Dart both default the switch to OFF.
+  - The native listener records whether a notification came from the device's default SMS app, allowing valid notifications from unlisted SMS packages through the Dart source gate.
+  - Automatic transaction creation checks the dedupe key and inserts the transaction and capture record in one database transaction, preventing replayed notifications from creating duplicate transactions.
+  - Per-notification ingestion and queue/scheduler failures emit diagnostics without logging captured message text.
 
 ## Application Branding & Package Information
 

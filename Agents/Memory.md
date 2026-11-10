@@ -61,7 +61,7 @@ Architecture rules currently applied:
 - **Side-by-Side Summary Cards**:
   - Left card: Soft Rose Blush (`#FDECE9`) Expense card with upward arrow circular badge (`Icons.arrow_upward_rounded`) and coral text.
   - Right card: Matcha Mint (`#E6F5EC`) Income card with downward arrow circular badge (`Icons.arrow_downward_rounded`) and jade text.
-- **Interactive `SpendingPieChart`**: Donut chart with spring-expanded slices on touch, haptic selection clicks, dynamic center focus ("Total Spent" or selected category details), and interactive category legend with tap-to-focus.
+- **Spending Overview & Breakdown**: Dashboard shows a compact donut and category summary styled after the finance inspiration reference. The `Detail` action opens a dedicated breakdown page with the existing larger chart and full category list. Both charts and legend rows are informational only, with no tap-to-focus, animation selection, or haptic interaction.
 - **Quick-Access Budgets & Categories Cards**: Side-by-side square squircle widget cards (1:1 aspect ratio, 22px radius, 44px circular pastel badges, and top-right arrow pills) positioned above Recent Transactions on the Dashboard:
   - **Budgets Card**: Displays total monthly budget limit pill (`$X,XXX.XX`) above the Budgets name and subtitle.
   - **Categories Card**: Displays dual count badges (rose blush circle with upward arrow for expenses, matcha mint circle with downward arrow for income) above the Categories name and subtitle.

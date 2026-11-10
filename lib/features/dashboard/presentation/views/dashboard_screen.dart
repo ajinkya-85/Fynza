@@ -21,6 +21,7 @@ import '../../../transactions/presentation/widgets/transaction_tile.dart';
 import '../view_models/dashboard_notifier.dart';
 import '../widgets/spending_pie_chart.dart';
 import '../widgets/summary_cards.dart';
+import 'spending_breakdown_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   final VoidCallback? onNavigateToTransactions;
@@ -174,10 +175,19 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 20),
 
-                    // Spending Breakdown Pie Chart (fl_chart)
-                    SpendingPieChart(
+                    SpendingOverviewCard(
                       spendings: summary.categorySpendings,
                       totalExpenseCents: summary.totalExpenseCents,
+                      onDetails: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => SpendingBreakdownScreen(
+                              spendings: summary.categorySpendings,
+                              totalExpenseCents: summary.totalExpenseCents,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
 

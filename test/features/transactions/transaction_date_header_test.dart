@@ -34,7 +34,7 @@ void main() {
       );
 
       expect(find.textContaining('Today'), findsOneWidget);
-      expect(find.text(r'+$50.00'), findsOneWidget);
+      expect(find.text(r'+$ 50.00'), findsOneWidget);
     });
 
     testWidgets('renders negative net total formatted correctly', (tester) async {
@@ -57,7 +57,7 @@ void main() {
       );
 
       expect(find.textContaining('Yesterday'), findsOneWidget);
-      expect(find.text(r'-$25.50'), findsOneWidget);
+      expect(find.text(r'-$ 25.50'), findsOneWidget);
     });
   });
 }

@@ -56,29 +56,17 @@ class DashboardScreen extends ConsumerWidget {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryAmber.withValues(
-                  alpha: isDark ? 0.22 : 0.15,
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.account_balance_wallet_rounded,
-                color: AppTheme.primaryAmber,
-                size: 20,
-              ),
+            Icon(
+              Icons.account_balance_wallet_rounded,
+              color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             Text(
               'Fynza',
               style: theme.textTheme.titleLarge?.copyWith(
-                color: isDark
-                    ? theme.colorScheme.onSurface
-                    : AppTheme.textCharcoal,
+                color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
+                letterSpacing: 1.2,
               ),
             ),
           ],

@@ -52,9 +52,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Dining'), findsOneWidget);
-      expect(find.text(r'Spent: $45.00'), findsOneWidget);
-      expect(find.text(r'Limit: $100.00'), findsOneWidget);
-      expect(find.text(r'$55.00 remaining'), findsOneWidget);
+      expect(find.text(r'Spent: $ 45.00'), findsOneWidget);
+      expect(find.text(r'Limit: $ 100.00'), findsOneWidget);
+      expect(find.text(r'$ 55.00 remaining'), findsOneWidget);
       expect(find.text('45%'), findsOneWidget);
     });
 

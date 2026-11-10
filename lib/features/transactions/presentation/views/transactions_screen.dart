@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/constants/capture_constants.dart';
+import '../../../../core/di/database_provider.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/transaction_type.dart';
 import '../../../../shared/models/transaction_with_category.dart';
@@ -10,6 +13,8 @@ import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/fluid_segmented_control.dart';
 import '../../../../shared/widgets/month_selector.dart';
+import '../../../auto_capture/presentation/view_models/capture_inbox_view_model.dart';
+import '../../../auto_capture/presentation/views/capture_inbox_view.dart';
 import '../view_models/transactions_notifier.dart';
 import '../widgets/transaction_date_header.dart';
 import '../widgets/transaction_search_bar.dart';
@@ -73,11 +78,7 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
         }
       }
       groups.add(
-        _DateGroup(
-          date: entry.key,
-          items: entry.value,
-          netAmountCents: net,
-        ),
+        _DateGroup(date: entry.key, items: entry.value, netAmountCents: net),
       );
     }
 
@@ -128,18 +129,34 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'Add Transaction',
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const TransactionFormScreen(),
+          Consumer(
+            builder: (context, ref, _) {
+              final isAutoCaptureEnabled = ref.watch(
+                autoCaptureEnabledProvider,
+              );
+              if (!CaptureConstants.isEnabled || !isAutoCaptureEnabled) {
+                return const SizedBox.shrink();
+              }
+              final countAsync = ref.watch(pendingCaptureCountProvider);
+              final count = countAsync.valueOrNull ?? 0;
+              return IconButton(
+                tooltip: 'Capture Inbox',
+                icon: Badge(
+                  isLabelVisible: count > 0,
+                  label: Text('$count'),
+                  backgroundColor: AppTheme.expenseAccent,
+                  child: const Icon(Icons.inbox_outlined),
                 ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CaptureInboxView(),
+                    ),
+                  );
+                },
               );
             },
           ),
-          const SizedBox(width: 4),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
@@ -167,7 +184,11 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
 
           // Fluid Segmented Control Filter (All / Expenses / Income)
           FluidSegmentedControl<TransactionType?>(
-            items: const [null, TransactionType.expense, TransactionType.income],
+            items: const [
+              null,
+              TransactionType.expense,
+              TransactionType.income,
+            ],
             selectedItem: state.typeFilter,
             onSelectedItemChanged: (type) => notifier.setTypeFilter(type),
             labelBuilder: (type) =>
@@ -175,8 +196,8 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             iconBuilder: (type) => type == null
                 ? null
                 : (type.isExpense
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded),
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded),
           ),
           const SizedBox(height: 4),
 
@@ -185,156 +206,155 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
             child: state.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : filtered.isEmpty
-                    ? (state.searchQuery.isNotEmpty || state.typeFilter != null
-                        ? EmptyState(
-                            icon: Icons.search_off_rounded,
-                            title: 'No Matching Transactions',
-                            subtitle:
-                                'Try adjusting your search query or type filter.',
-                            action: FilledButton.tonalIcon(
-                              onPressed: () {
-                                notifier.setSearchQuery('');
-                                notifier.setTypeFilter(null);
-                              },
-                              icon: const Icon(Icons.clear_rounded),
-                              label: const Text('Reset Filters'),
+                ? (state.searchQuery.isNotEmpty || state.typeFilter != null
+                      ? EmptyState(
+                          icon: Icons.search_off_rounded,
+                          title: 'No Matching Transactions',
+                          subtitle:
+                              'Try adjusting your search query or type filter.',
+                          action: FilledButton.tonalIcon(
+                            onPressed: () {
+                              notifier.setSearchQuery('');
+                              notifier.setTypeFilter(null);
+                            },
+                            icon: const Icon(Icons.clear_rounded),
+                            label: const Text('Reset Filters'),
+                          ),
+                        )
+                      : EmptyState(
+                          icon: Icons.receipt_long_outlined,
+                          title: 'No Transactions',
+                          subtitle:
+                              'No records found for ${DateFormatter.monthYear(selectedMonth)}',
+                          action: FilledButton.tonalIcon(
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const TransactionFormScreen(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Transaction'),
+                          ),
+                        ))
+                : FadingScrollBoundary(
+                    fadeHeight: 28.0,
+                    child: ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      itemCount: groups.length,
+                      itemBuilder: (context, groupIndex) {
+                        final group = groups[groupIndex];
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TransactionDateHeader(
+                              date: group.date,
+                              netAmountCents: group.netAmountCents,
                             ),
-                          )
-                        : EmptyState(
-                            icon: Icons.receipt_long_outlined,
-                            title: 'No Transactions',
-                            subtitle:
-                                'No records found for ${DateFormatter.monthYear(selectedMonth)}',
-                            action: FilledButton.tonalIcon(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const TransactionFormScreen(),
+                            const SizedBox(height: 4),
+                            ...group.items.map((item) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Dismissible(
+                                  key: ValueKey(item.transaction.id),
+                                  direction: DismissDirection.endToStart,
+                                  onUpdate: (details) {
+                                    if (details.reached &&
+                                        !details.previousReached) {
+                                      HapticFeedback.mediumImpact();
+                                    }
+                                  },
+                                  background: Container(
+                                    alignment: Alignment.centerRight,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.colorScheme.error,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          'Delete',
+                                          style: theme.textTheme.labelLarge
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Icon(
+                                          Icons.delete_outline_rounded,
+                                          color: Colors.white,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                );
-                              },
-                              icon: const Icon(Icons.add),
-                              label: const Text('Add Transaction'),
-                            ),
-                          ))
-                    : FadingScrollBoundary(
-                        fadeHeight: 28.0,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
-                        itemCount: groups.length,
-                        itemBuilder: (context, groupIndex) {
-                          final group = groups[groupIndex];
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              TransactionDateHeader(
-                                date: group.date,
-                                netAmountCents: group.netAmountCents,
-                              ),
-                              const SizedBox(height: 4),
-                              ...group.items.map((item) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: Dismissible(
-                                    key: ValueKey(item.transaction.id),
-                                    direction: DismissDirection.endToStart,
-                                    onUpdate: (details) {
-                                      if (details.reached &&
-                                          !details.previousReached) {
-                                        HapticFeedback.mediumImpact();
-                                      }
-                                    },
-                                    background: Container(
-                                      alignment: Alignment.centerRight,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20),
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.error,
-                                        borderRadius:
-                                            BorderRadius.circular(16),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            'Delete',
-                                            style: theme.textTheme.labelLarge
-                                                ?.copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
+                                  confirmDismiss: (direction) async {
+                                    return await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text(
+                                          'Delete Transaction?',
+                                        ),
+                                        content: const Text(
+                                          'Are you sure you want to delete this transaction?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.of(
+                                              context,
+                                            ).pop(false),
+                                            child: const Text('Cancel'),
                                           ),
-                                          const SizedBox(width: 8),
-                                          const Icon(
-                                            Icons.delete_outline_rounded,
-                                            color: Colors.white,
+                                          FilledButton(
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor:
+                                                  theme.colorScheme.error,
+                                            ),
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(true),
+                                            child: const Text('Delete'),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                    confirmDismiss: (direction) async {
-                                      return await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text(
-                                              'Delete Transaction?'),
-                                          content: const Text(
-                                            'Are you sure you want to delete this transaction?',
+                                    );
+                                  },
+                                  onDismissed: (_) {
+                                    notifier.deleteTransaction(
+                                      item.transaction.id,
+                                    );
+                                  },
+                                  child: TransactionTile(
+                                    item: item,
+                                    onTap: () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => TransactionFormScreen(
+                                            initial: item,
                                           ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.of(context)
-                                                      .pop(false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            FilledButton(
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    theme.colorScheme.error,
-                                              ),
-                                              onPressed: () =>
-                                                  Navigator.of(context)
-                                                      .pop(true),
-                                              child: const Text('Delete'),
-                                            ),
-                                          ],
                                         ),
                                       );
                                     },
-                                    onDismissed: (_) {
-                                      notifier.deleteTransaction(
-                                          item.transaction.id);
-                                    },
-                                    child: TransactionTile(
-                                      item: item,
-                                      onTap: () {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) =>
-                                                TransactionFormScreen(
-                                                    initial: item),
-                                          ),
-                                        );
-                                      },
-                                    ),
                                   ),
-                                );
-                              }),
-                              const SizedBox(height: 6),
-                            ],
-                          );
-                        },
-                      ),
+                                ),
+                              );
+                            }),
+                            const SizedBox(height: 6),
+                          ],
+                        );
+                      },
                     ),
+                  ),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/currency_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
+import '../../../../shared/providers/app_alert_provider.dart';
 import '../../domain/models/parsed_transaction.dart';
 import '../../domain/parsing/sms_transaction_parser.dart';
 import '../view_models/capture_inbox_view_model.dart';
@@ -50,9 +51,12 @@ class _ParserPlaygroundViewState extends ConsumerState<ParserPlaygroundView> {
 
     if (mounted) {
       setState(() => _isAdding = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction added to capture inbox!')),
-      );
+      ref
+          .read(appAlertProvider.notifier)
+          .show(
+            'Transaction added to capture inbox!',
+            tone: AppAlertTone.success,
+          );
       Navigator.of(context).pop();
     }
   }

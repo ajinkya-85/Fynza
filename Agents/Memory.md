@@ -159,6 +159,8 @@ Architecture rules currently applied:
   - **Exact Deduplication**: Generates deterministic SHA-256 dedupe keys based on UPI reference / transaction ID or sender + normalized text + amount. Automatically deduplicates identical incoming notifications via SQLite UNIQUE constraint with `InsertMode.insertOrIgnore`.
   - **Possible Duplicate Detection**: Detects potential duplicates within ±24 hours (`CaptureDao.hasMatchingLoggedTransaction`).
   - **Duplicate Warning UI (Yellow Treatment)**: Highlighted in `CaptureInboxView` with amber/yellow border and warning badge (`⚠️ Possible Duplicate`).
+    - Likely-identical pending captures are grouped into one inbox card, with one `Add once` action that confirms one capture and dismisses grouped copies only after the transaction saves. Action rows wrap on narrow screens to avoid pixel overflow.
+  - **App Alerts (`lib/shared/providers/app_alert_provider.dart`, `lib/shared/widgets/app_alert_host.dart`)**: Bottom alerts are collected in a shared `Updates` section over the app rather than separate snackbars. Undoable alerts keep their action button; informational, success, and error alerts can be dismissed individually or cleared together.
 - **Database & DAO (`captured_transactions_table.dart`, `counterparty_rules_table.dart`, `capture_dao.dart`)**:
   - Drift schema v4 with migration strategy from v1-v3 preserving existing tables and data, including migration of legacy category palette colors.
   - Stores status (`pending`, `confirmed`, `dismissed`) and nullable foreign key `transaction_id`.

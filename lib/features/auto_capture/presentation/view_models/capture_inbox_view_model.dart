@@ -87,8 +87,20 @@ class CaptureInboxViewModel extends StateNotifier<CaptureInboxState> {
     await _repository.dismissCapture(id);
   }
 
+  Future<void> dismissMany(Iterable<int> ids) async {
+    for (final id in ids) {
+      await _repository.dismissCapture(id);
+    }
+  }
+
   Future<void> undoDismiss(int id) async {
     await _repository.undoDismiss(id);
+  }
+
+  Future<void> undoDismissMany(Iterable<int> ids) async {
+    for (final id in ids) {
+      await _repository.undoDismiss(id);
+    }
   }
 
   Future<void> undoAutoAdd(int id) async {

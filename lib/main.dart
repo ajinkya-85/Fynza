@@ -5,6 +5,7 @@ import 'core/services/currency_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/capture_constants.dart';
 import 'core/di/database_provider.dart';
+import 'shared/widgets/app_alert_host.dart';
 import 'features/auto_capture/data/services/capture_preferences_service.dart';
 import 'features/auto_capture/data/services/auto_capture_scheduler.dart';
 import 'features/backup/data/services/auto_backup_scheduler.dart';
@@ -50,6 +51,10 @@ class FynzaApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
+      builder: (context, child) => Stack(
+        fit: StackFit.expand,
+        children: [child ?? const SizedBox.shrink(), const AppAlertHost()],
+      ),
       home: const MainScaffold(),
     );
   }

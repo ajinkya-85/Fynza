@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/currency_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../shared/providers/global_month_provider.dart';
+import '../../../../shared/providers/app_alert_provider.dart';
 import '../../../../shared/widgets/empty_state.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/month_selector.dart';
@@ -22,9 +23,12 @@ class BudgetScreen extends ConsumerWidget {
     final expenseCategories = categories.where((c) => !c.isIncome).toList();
 
     if (expenseCategories.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add an expense category first.')),
-      );
+      ref
+          .read(appAlertProvider.notifier)
+          .show(
+            'Please add an expense category first.',
+            tone: AppAlertTone.information,
+          );
       return;
     }
 

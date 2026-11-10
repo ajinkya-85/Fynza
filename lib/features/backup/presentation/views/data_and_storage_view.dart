@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
+import '../../../../shared/providers/app_alert_provider.dart';
 import '../../../../core/utils/relative_time_formatter.dart';
 import '../view_models/backup_view_model.dart';
 import '../widgets/backup_info_dialog.dart';
@@ -51,21 +52,15 @@ class DataAndStorageView extends ConsumerWidget {
     ref.listen<BackupUiState>(backupViewModelProvider, (previous, next) {
       if (next.userErrorMessage != null &&
           next.userErrorMessage != previous?.userErrorMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.userErrorMessage!),
-            backgroundColor: theme.colorScheme.error,
-          ),
-        );
+        ref
+            .read(appAlertProvider.notifier)
+            .show(next.userErrorMessage!, tone: AppAlertTone.error);
         viewModel.clearMessages();
       } else if (next.successMessage != null &&
           next.successMessage != previous?.successMessage) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(next.successMessage!),
-            backgroundColor: theme.colorScheme.primary,
-          ),
-        );
+        ref
+            .read(appAlertProvider.notifier)
+            .show(next.successMessage!, tone: AppAlertTone.success);
         viewModel.clearMessages();
       }
     });
@@ -135,11 +130,12 @@ class DataAndStorageView extends ConsumerWidget {
                         Clipboard.setData(
                           ClipboardData(text: state.backupDirectoryPath),
                         );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Storage path copied to clipboard'),
-                          ),
-                        );
+                        ref
+                            .read(appAlertProvider.notifier)
+                            .show(
+                              'Storage path copied to clipboard',
+                              tone: AppAlertTone.success,
+                            );
                       },
               ),
 

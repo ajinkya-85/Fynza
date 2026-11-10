@@ -5,9 +5,11 @@ import '../../../../core/services/currency_service.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/app_currency.dart';
+import '../../../../shared/providers/app_alert_provider.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../transactions/presentation/views/transaction_form_screen.dart';
 import '../../domain/models/capture_item.dart';
+import 'capture_inbox_grouping.dart';
 import '../view_models/capture_inbox_view_model.dart';
 
 class CaptureInboxView extends ConsumerWidget {
@@ -19,6 +21,7 @@ class CaptureInboxView extends ConsumerWidget {
     final state = ref.watch(captureInboxViewModelProvider);
     final viewModel = ref.read(captureInboxViewModelProvider.notifier);
     final currency = ref.watch(selectedCurrencyProvider);
+    final pendingGroups = groupPendingCaptures(state.pendingItems);
 
     return Scaffold(
       appBar: AppBar(
@@ -54,13 +57,13 @@ class CaptureInboxView extends ConsumerWidget {
                     else ...[
                       if (state.pendingItems.isNotEmpty) ...[
                         Text(
-                          'Pending Review (${state.pendingItems.length})',
+                          'Pending Review (${pendingGroups.length})',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...state.pendingItems.map(
+                        ...pendingGroups.map(
                           (item) => _buildPendingItemTile(
                             context,
                             ref,
@@ -82,6 +85,7 @@ class CaptureInboxView extends ConsumerWidget {
                         ...state.recentlyAutoAdded.map(
                           (item) => _buildAutoAddedTile(
                             context,
+                            ref,
                             item,
                             viewModel,
                             currency,
@@ -142,10 +146,12 @@ class CaptureInboxView extends ConsumerWidget {
   Widget _buildPendingItemTile(
     BuildContext context,
     WidgetRef ref,
-    CaptureItem item,
+    PendingCaptureGroup group,
     CaptureInboxViewModel vm,
     AppCurrency currency,
   ) {
+    final item = group.primary;
+    final groupIds = group.items.map((capture) => capture.id).toList();
     final theme = Theme.of(context);
     final isExpense = item.type.isExpense;
     final amountColor = isExpense
@@ -174,7 +180,38 @@ class CaptureInboxView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (isDuplicate) ...[
+            if (group.hasMultiple) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.copy_all_rounded,
+                      size: 18,
+                      color: theme.colorScheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${group.items.length} similar captures grouped. Add this transaction once?',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (isDuplicate) ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.symmetric(
@@ -234,11 +271,16 @@ class CaptureInboxView extends ConsumerWidget {
                     ],
                   ),
                 ),
-                Text(
-                  '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCents(item.amountCents, currency)}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: amountColor,
+                Flexible(
+                  child: Text(
+                    '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCents(item.amountCents, currency)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: amountColor,
+                    ),
                   ),
                 ),
               ],
@@ -278,11 +320,14 @@ class CaptureInboxView extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 12),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 FilledButton.tonal(
                   onPressed: () async {
-                    await Navigator.of(context).push(
+                    final saved = await Navigator.of(context).push<bool>(
                       MaterialPageRoute<bool>(
                         builder: (_) => TransactionFormScreen(
                           captureIdToConfirm: item.id,
@@ -295,40 +340,50 @@ class CaptureInboxView extends ConsumerWidget {
                         ),
                       ),
                     );
+                    if (saved == true && group.hasMultiple) {
+                      await vm.dismissMany(groupIds.skip(1));
+                    }
                   },
-                  child: Text(isDuplicate ? 'Add Anyway' : 'Add'),
+                  child: Text(
+                    group.hasMultiple
+                        ? 'Add once'
+                        : (isDuplicate ? 'Add Anyway' : 'Add'),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
                   onPressed: () async {
-                    await vm.dismiss(item.id);
+                    await vm.dismissMany(groupIds);
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Transaction dismissed'),
-                          action: SnackBarAction(
-                            label: 'Undo',
-                            onPressed: () => vm.undoDismiss(item.id),
-                          ),
-                        ),
-                      );
+                      ref
+                          .read(appAlertProvider.notifier)
+                          .show(
+                            group.hasMultiple
+                                ? 'Similar captures dismissed'
+                                : 'Transaction dismissed',
+                            tone: AppAlertTone.information,
+                            actionLabel: 'Undo',
+                            onAction: () => vm.undoDismissMany(groupIds),
+                          );
                     }
                   },
-                  child: Text(isDuplicate ? 'Dismiss Duplicate' : 'Dismiss'),
+                  child: Text(
+                    group.hasMultiple
+                        ? 'Dismiss all'
+                        : (isDuplicate ? 'Dismiss Duplicate' : 'Dismiss'),
+                  ),
                 ),
-                const Spacer(),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
                   onSelected: (val) {
                     if (val == 'ignore') {
                       vm.ignoreSender(item.sender);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
+                      ref
+                          .read(appAlertProvider.notifier)
+                          .show(
                             'Ignored all messages from ${item.sender}',
-                          ),
-                        ),
-                      );
+                            tone: AppAlertTone.success,
+                          );
                     }
                   },
                   itemBuilder: (_) => [
@@ -348,6 +403,7 @@ class CaptureInboxView extends ConsumerWidget {
 
   Widget _buildAutoAddedTile(
     BuildContext context,
+    WidgetRef ref,
     CaptureItem item,
     CaptureInboxViewModel vm,
     AppCurrency currency,
@@ -364,28 +420,34 @@ class CaptureInboxView extends ConsumerWidget {
         subtitle: Text(
           '${item.sender} • ${DateFormatter.fullDate(item.occurredAt)}',
         ),
-        trailing: Row(
+        trailing: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCents(item.amountCents, currency)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isExpense
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.primary,
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  '${isExpense ? '-' : '+'}${CurrencyFormatter.formatCents(item.amountCents, currency)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isExpense
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.primary,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(width: 8),
             TextButton(
               onPressed: () async {
                 await vm.undoAutoAdd(item.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Auto-added transaction undone'),
-                    ),
-                  );
+                  ref
+                      .read(appAlertProvider.notifier)
+                      .show(
+                        'Auto-added transaction undone',
+                        tone: AppAlertTone.success,
+                      );
                 }
               },
               child: const Text('Undo'),

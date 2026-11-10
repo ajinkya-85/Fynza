@@ -24,7 +24,7 @@ enum AppCurrency {
     final wholeAmount = absoluteCents ~/ 100;
     final fractionalAmount = (absoluteCents % 100).toString().padLeft(2, '0');
     final formatted =
-        '$symbol ${_formatWholeAmount(wholeAmount)}.$fractionalAmount';
+        '$symbol ${_formatWholeAmount(wholeAmount, indian: this == AppCurrency.inr)}.$fractionalAmount';
     if (cents < 0) return '-$formatted';
     return formatted;
   }
@@ -61,9 +61,20 @@ class CustomCurrencyDetails {
   }
 }
 
-String _formatWholeAmount(int amount) {
-  return amount.toString().replaceAllMapped(
-    RegExp(r'\B(?=(\d{3})+(?!\d))'),
-    (_) => ',',
-  );
+String _formatWholeAmount(int amount, {bool indian = false}) {
+  final digits = amount.toString();
+  if (!indian || digits.length <= 3) {
+    return digits.replaceAllMapped(RegExp(r'\B(?=(\d{3})+(?!\d))'), (_) => ',');
+  }
+
+  final lastThreeDigits = digits.substring(digits.length - 3);
+  var leadingDigits = digits.substring(0, digits.length - 3);
+  final groups = <String>[];
+  while (leadingDigits.length > 2) {
+    groups.insert(0, leadingDigits.substring(leadingDigits.length - 2));
+    leadingDigits = leadingDigits.substring(0, leadingDigits.length - 2);
+  }
+  groups.insert(0, leadingDigits);
+
+  return '${groups.join(',')},$lastThreeDigits';
 }

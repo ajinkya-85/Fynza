@@ -105,7 +105,7 @@ Architecture rules currently applied:
 - The app supports preset currencies and a persisted custom currency.
 - Currency selection is managed by `CurrencyService` and `selectedCurrencyProvider`.
 - Currency values are stored as integer cents and formatted through `CurrencyFormatter`.
-- Formatted amounts use international thousands separators (for example, `$ 123,456.78`), including custom currencies, with a space after the currency symbol.
+- Formatted amounts use Indian grouping for INR (for example, `₹ 12,34,56,789.00`) and international thousands separators for other preset and custom currencies (for example, `$ 123,456.78`), with a space after the currency symbol.
 - Settings uses an expandable Currency section: it expands when tapped and collapses after a selection.
 
 ### Shared month selection
@@ -115,6 +115,7 @@ Architecture rules currently applied:
 - Changing the month with arrows or a horizontal swipe on any one of these screens updates all three feature data streams.
 - Feature view models retain a local month only to query their repositories; they listen to the global provider and refresh when it changes.
 - `MonthSelector` lives at `lib/shared/widgets/month_selector.dart`.
+- Month-label changes use a fixed-width, centered ease-in/ease-out cross-fade with a subtle scale transition. Keep the animation direction-independent so rapid forward/backward navigation does not make outgoing labels reverse along an outdated path.
 
 ### Backup and Restore ("Data and Storage")
 

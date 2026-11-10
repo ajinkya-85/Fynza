@@ -9,6 +9,14 @@ void main() {
         CurrencyFormatter.formatCents(123456, AppCurrency.inr),
         '₹ 1,234.56',
       );
+      expect(
+        CurrencyFormatter.formatCents(12345678900, AppCurrency.inr),
+        '₹ 12,34,56,789.00',
+      );
+      expect(
+        CurrencyFormatter.formatCents(-12345678900, AppCurrency.inr),
+        '-₹ 12,34,56,789.00',
+      );
       expect(CurrencyFormatter.formatCents(-50, AppCurrency.eur), '-€ 0.50');
       expect(
         CurrencyFormatter.formatCents(1250, AppCurrency.custom),
@@ -21,6 +29,10 @@ void main() {
       expect(
         CurrencyFormatter.formatCents(-123456789, AppCurrency.usd),
         r'-$ 1,234,567.89',
+      );
+      expect(
+        CurrencyFormatter.formatCents(12345678900, AppCurrency.usd),
+        r'$ 123,456,789.00',
       );
     });
 

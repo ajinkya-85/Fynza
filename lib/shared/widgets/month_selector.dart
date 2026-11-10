@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../core/theme/spring_curves.dart';
 import '../../core/utils/date_formatter.dart';
 import 'frosted_container.dart';
 import 'pressable_scale.dart';
@@ -25,24 +24,12 @@ class MonthSelector extends StatefulWidget {
 }
 
 class _MonthSelectorState extends State<MonthSelector> {
-  bool _isForward = true;
-
-  @override
-  void didUpdateWidget(covariant MonthSelector oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.selectedDate != oldWidget.selectedDate) {
-      _isForward = widget.selectedDate.isAfter(oldWidget.selectedDate);
-    }
-  }
-
   void _handlePrevious() {
-    setState(() => _isForward = false);
     HapticFeedback.selectionClick();
     widget.onPrevious();
   }
 
   void _handleNext() {
-    setState(() => _isForward = true);
     HapticFeedback.selectionClick();
     widget.onNext();
   }
@@ -71,7 +58,9 @@ class _MonthSelectorState extends State<MonthSelector> {
             blur: 16,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
             tintColor: isDark
-                ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.65)
+                ? theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.65,
+                  )
                 : theme.colorScheme.secondaryContainer.withValues(alpha: 0.75),
             border: Border.all(
               color: isDark
@@ -87,9 +76,7 @@ class _MonthSelectorState extends State<MonthSelector> {
                   onPressed: _handlePrevious,
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: const BoxDecoration(shape: BoxShape.circle),
                     child: Icon(
                       Icons.chevron_left_rounded,
                       size: 22,
@@ -102,37 +89,38 @@ class _MonthSelectorState extends State<MonthSelector> {
                   child: SizedBox(
                     width: 130,
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      switchInCurve: SpringCurves.criticallyDamped,
-                      switchOutCurve: SpringCurves.criticallyDamped,
+                      duration: const Duration(milliseconds: 320),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      layoutBuilder: (currentChild, previousChildren) => Stack(
+                        alignment: Alignment.center,
+                        children: [...previousChildren, ?currentChild],
+                      ),
                       transitionBuilder: (child, animation) {
-                        final inOffset = _isForward
-                            ? const Offset(0.35, 0.0)
-                            : const Offset(-0.35, 0.0);
-                        final outOffset = _isForward
-                            ? const Offset(-0.35, 0.0)
-                            : const Offset(0.35, 0.0);
-
-                        final slideAnim = Tween<Offset>(
-                          begin: child.key == ValueKey(widget.selectedDate)
-                              ? inOffset
-                              : Offset.zero,
-                          end: child.key == ValueKey(widget.selectedDate)
-                              ? Offset.zero
-                              : outOffset,
-                        ).animate(animation);
-
-                        return SlideTransition(
-                          position: slideAnim,
-                          child: FadeTransition(
-                            opacity: animation,
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.96, end: 1).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: Curves.easeOutCubic,
+                                reverseCurve: Curves.easeInCubic,
+                              ),
+                            ),
                             child: child,
                           ),
                         );
                       },
                       child: Text(
                         DateFormatter.monthYear(widget.selectedDate),
-                        key: ValueKey(widget.selectedDate),
+                        key: ValueKey(
+                          DateTime(
+                            widget.selectedDate.year,
+                            widget.selectedDate.month,
+                          ),
+                        ),
+                        maxLines: 1,
+                        softWrap: false,
                         textAlign: TextAlign.center,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
@@ -148,9 +136,7 @@ class _MonthSelectorState extends State<MonthSelector> {
                   onPressed: _handleNext,
                   child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                    ),
+                    decoration: const BoxDecoration(shape: BoxShape.circle),
                     child: Icon(
                       Icons.chevron_right_rounded,
                       size: 22,

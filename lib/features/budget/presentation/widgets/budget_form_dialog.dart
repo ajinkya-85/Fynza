@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/services/currency_service.dart';
+import '../../../../core/theme/spring_curves.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../categories/domain/models/category.dart';
+import '../../../transactions/presentation/view_models/transaction_form_notifier.dart';
+import '../../../../shared/models/transaction_type.dart';
 import '../../../../shared/widgets/category_icon.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
@@ -37,26 +40,26 @@ class BudgetFormDialog extends ConsumerStatefulWidget {
 class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _amountController;
+  late final TextEditingController _categorySearchController;
   int? _selectedCategoryId;
+  bool _isCategoryListExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategoryId =
-        widget.initialCategoryId ??
-        (widget.availableCategories.isNotEmpty
-            ? widget.availableCategories.first.id
-            : null);
+    _selectedCategoryId = widget.initialCategoryId;
     _amountController = TextEditingController(
       text: widget.initialLimitCents != null && widget.initialLimitCents! > 0
           ? CurrencyFormatter.centsToDecimalString(widget.initialLimitCents!)
           : '',
     );
+    _categorySearchController = TextEditingController();
   }
 
   @override
   void dispose() {
     _amountController.dispose();
+    _categorySearchController.dispose();
     super.dispose();
   }
 
@@ -66,11 +69,60 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
     _amountController.text = CurrencyFormatter.centsToDecimalString(newCents);
   }
 
+  void _selectCategory(int categoryId) {
+    setState(() {
+      _selectedCategoryId = categoryId;
+      _isCategoryListExpanded = false;
+      _categorySearchController.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final currency = ref.watch(selectedCurrencyProvider);
     final isEditing = widget.initialLimitCents != null;
+    final recentCategoriesProvider = recentTransactionCategoriesProvider(
+      TransactionType.expense,
+    );
+    final recentCategoryIds =
+        ref.watch(recentCategoriesProvider).valueOrNull ?? const <int>[];
+    final categories = widget.availableCategories;
+    final recentCategories = <Category>[];
+    for (final id in recentCategoryIds) {
+      for (final category in categories) {
+        if (category.id == id) {
+          recentCategories.add(category);
+          break;
+        }
+      }
+    }
+    final selectedCategories = categories
+        .where((category) => category.id == _selectedCategoryId)
+        .toList();
+    final selectedCategory = selectedCategories.isEmpty
+        ? null
+        : selectedCategories.first;
+    final orderedRecent = [
+      ?selectedCategory,
+      ...recentCategories.where(
+        (category) => category.id != _selectedCategoryId,
+      ),
+    ];
+    final visibleRecent =
+        (orderedRecent.isNotEmpty ? orderedRecent : categories)
+            .take(3)
+            .toList();
+    final visibleRecentIds = visibleRecent
+        .map((category) => category.id)
+        .toSet();
+    final query = _categorySearchController.text.trim().toLowerCase();
+    final moreCategories = categories.where((category) {
+      if (query.isNotEmpty) {
+        return category.name.toLowerCase().contains(query);
+      }
+      return !visibleRecentIds.contains(category.id);
+    }).toList();
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -120,7 +172,7 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                   ),
                   const SizedBox(height: 32),
 
-                  // Category Dropdown
+                  // Category Picker
                   if (widget.initialCategoryId == null) ...[
                     Text(
                       'Category',
@@ -129,48 +181,169 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    DropdownButtonFormField<int>(
-                      initialValue: _selectedCategoryId,
-                      icon: const Icon(Icons.arrow_drop_down_circle_outlined),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: theme.colorScheme.surfaceContainerHighest
-                            .withValues(alpha: 0.3),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
+                    if (visibleRecent.isNotEmpty) ...[
+                      Text(
+                        recentCategories.isEmpty ? 'Categories' : 'Recent',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      items: widget.availableCategories.map((cat) {
-                        return DropdownMenuItem<int>(
-                          value: cat.id,
-                          child: Row(
-                            children: [
-                              CategoryIcon(
-                                iconKey: cat.icon,
-                                colorValue: cat.color,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                cat.name,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.w500,
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: visibleRecent.map((category) {
+                          return _BudgetCategoryChip(
+                            category: category,
+                            isSelected: _selectedCategoryId == category.id,
+                            onPressed: () => _selectCategory(category.id),
+                          );
+                        }).toList(),
+                      ),
+                      if (categories.length > visibleRecent.length)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _isCategoryListExpanded =
+                                    !_isCategoryListExpanded;
+                                if (!_isCategoryListExpanded) {
+                                  _categorySearchController.clear();
+                                }
+                              });
+                            },
+                            icon: AnimatedRotation(
+                              turns: _isCategoryListExpanded ? 0.5 : 0,
+                              duration: const Duration(milliseconds: 220),
+                              curve: SpringCurves.criticallyDamped,
+                              child: const Icon(Icons.expand_more_rounded),
+                            ),
+                            label: Text(
+                              _isCategoryListExpanded
+                                  ? 'Less'
+                                  : 'More (${categories.length - visibleRecent.length})',
+                            ),
+                          ),
+                        ),
+                      ClipRect(
+                        child: AnimatedSize(
+                          duration: const Duration(milliseconds: 260),
+                          curve: SpringCurves.criticallyDamped,
+                          alignment: Alignment.topCenter,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            reverseDuration: const Duration(milliseconds: 140),
+                            switchInCurve: SpringCurves.criticallyDamped,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, -0.025),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                ),
+                            child: _isCategoryListExpanded
+                                ? Column(
+                                    key: const ValueKey(
+                                      'expanded_budget_categories',
+                                    ),
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      TextField(
+                                        key: const Key(
+                                          'budget_category_search_field',
+                                        ),
+                                        controller: _categorySearchController,
+                                        onChanged: (_) => setState(() {}),
+                                        decoration: InputDecoration(
+                                          hintText: 'Search categories',
+                                          prefixIcon: const Icon(
+                                            Icons.search_rounded,
+                                          ),
+                                          suffixIcon: query.isEmpty
+                                              ? null
+                                              : IconButton(
+                                                  tooltip: 'Clear search',
+                                                  onPressed: () {
+                                                    _categorySearchController
+                                                        .clear();
+                                                    setState(() {});
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.close_rounded,
+                                                  ),
+                                                ),
+                                          isDense: true,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      if (moreCategories.isEmpty)
+                                        Text(
+                                          'No matching categories.',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        )
+                                      else
+                                        Wrap(
+                                          spacing: 10,
+                                          runSpacing: 10,
+                                          children: moreCategories.map((
+                                            category,
+                                          ) {
+                                            final isSelected =
+                                                _selectedCategoryId ==
+                                                category.id;
+                                            return _BudgetCategoryChip(
+                                              category: category,
+                                              isSelected: isSelected,
+                                              onPressed: () =>
+                                                  _selectCategory(category.id),
+                                            );
+                                          }).toList(),
+                                        ),
+                                    ],
+                                  )
+                                : const SizedBox(
+                                    key: ValueKey(
+                                      'collapsed_budget_categories',
+                                    ),
+                                    width: double.infinity,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    FormField<int>(
+                      validator: (_) => _selectedCategoryId == null
+                          ? 'Please select a category'
+                          : null,
+                      builder: (field) => field.hasError
+                          ? Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                field.errorText!,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
                                 ),
                               ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() => _selectedCategoryId = val);
-                      },
-                      validator: (val) =>
-                          val == null ? 'Please select a category' : null,
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -325,6 +498,74 @@ class _BudgetFormDialogState extends ConsumerState<BudgetFormDialog> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetCategoryChip extends StatelessWidget {
+  final Category category;
+  final bool isSelected;
+  final VoidCallback onPressed;
+
+  const _BudgetCategoryChip({
+    required this.category,
+    required this.isSelected,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final categoryColor = Color(category.color);
+
+    return PressableScale(
+      targetScale: 0.96,
+      enableHaptics: false,
+      onPressed: () {
+        HapticFeedback.selectionClick();
+        onPressed();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: SpringCurves.criticallyDamped,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? categoryColor.withValues(alpha: 0.14)
+              : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? categoryColor
+                : theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CategoryIcon(
+              iconKey: category.icon,
+              colorValue: category.color,
+              size: 20,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              category.name,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: isSelected
+                    ? categoryColor
+                    : theme.colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 5),
+              Icon(Icons.check_circle_rounded, size: 16, color: categoryColor),
+            ],
+          ],
         ),
       ),
     );

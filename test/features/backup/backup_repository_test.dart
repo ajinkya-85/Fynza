@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:fynza/core/services/currency_service.dart';
 import 'package:fynza/data/db/app_database.dart';
+import 'package:fynza/features/auto_capture/domain/models/capture_status.dart';
 import 'package:fynza/features/backup/data/services/backup_file_service.dart';
 import 'package:fynza/features/backup/domain/models/backup_failure.dart';
 import 'package:fynza/features/backup/data/repositories/backup_repository_impl.dart';
@@ -95,6 +96,21 @@ void main() {
               ),
             );
 
+        await db.captureDao.insertCaptureOrIgnore(
+          CapturedTransactionsCompanion.insert(
+            amountCents: 50000,
+            type: TransactionType.expense,
+            reference: const Value('UPI-REFERENCE-123'),
+            occurredAt: DateTime.utc(2026, 10, 10, 13, 0),
+            capturedAt: DateTime.utc(2026, 10, 10, 13, 0),
+            sourcePackage: 'com.google.android.apps.messaging',
+            sender: 'VM-HDFCBK',
+            dedupeKey: 'capture_duplicate_round_trip',
+            status: CaptureStatus.pending,
+            duplicateCount: const Value(2),
+          ),
+        );
+
         await currencyService.setCurrency(AppCurrency.eur);
 
         // 2. Create backup bytes
@@ -126,6 +142,7 @@ void main() {
         final restoredCats = await freshDb.select(freshDb.categories).get();
         final restoredTxs = await freshDb.select(freshDb.transactions).get();
         final restoredBudgets = await freshDb.select(freshDb.budgets).get();
+        final restoredCaptures = await freshDb.captureDao.getAllCaptures();
 
         expect(restoredCats.length, 13);
         expect(
@@ -145,6 +162,8 @@ void main() {
 
         expect(restoredBudgets.length, 1);
         expect(restoredBudgets.first.amountLimit, 10000);
+        expect(restoredCaptures, hasLength(1));
+        expect(restoredCaptures.single.duplicateCount, 2);
         expect(freshCurrencyService.getCurrency(), AppCurrency.eur);
 
         // 6. Test ID collision safety on fresh insert after restore

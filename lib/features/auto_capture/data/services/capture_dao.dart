@@ -3,6 +3,7 @@ import '../../../../data/db/app_database.dart';
 import '../../../../data/db/tables/captured_transactions_table.dart';
 import '../../../../data/db/tables/counterparty_rules_table.dart';
 import '../../domain/models/capture_status.dart';
+import '../../../../shared/models/transaction_type.dart';
 
 part 'capture_dao.g.dart';
 
@@ -66,6 +67,48 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
     )..where((t) => t.dedupeKey.equals(dedupeKey))).getSingleOrNull();
   }
 
+  /// Matches a transaction reference across captures created by older app
+  /// versions, whose dedupe keys were not scoped to amount/type/account.
+  Future<CapturedTransaction?> findMatchingCaptureIdentity({
+    required String reference,
+    required int amountCents,
+    required TransactionType type,
+    String? accountLast4,
+  }) async {
+    final matches =
+        await (select(capturedTransactions)..where(
+              (t) =>
+                  t.reference.equals(reference) &
+                  t.amountCents.equals(amountCents) &
+                  t.type.equals(type.name),
+            ))
+            .get();
+    final compatibleMatches = matches
+        .where(
+          (capture) =>
+              capture.accountLast4 == null ||
+              accountLast4 == null ||
+              capture.accountLast4 == accountLast4,
+        )
+        .toList();
+    compatibleMatches.sort((a, b) {
+      final aPending = a.status == CaptureStatus.pending;
+      final bPending = b.status == CaptureStatus.pending;
+      if (aPending == bPending) return 0;
+      return aPending ? -1 : 1;
+    });
+    return compatibleMatches.isEmpty ? null : compatibleMatches.first;
+  }
+
+  /// Atomically counts another notification matching the same transaction.
+  Future<void> incrementDuplicateCount(int captureId) {
+    return customStatement(
+      'UPDATE captured_transactions '
+      'SET duplicate_count = duplicate_count + 1 WHERE id = ?',
+      [captureId],
+    );
+  }
+
   /// Finds a captured transaction by ID.
   Future<CapturedTransaction?> getCaptureById(int id) {
     return (select(
@@ -116,26 +159,6 @@ class CaptureDao extends DatabaseAccessor<AppDatabase> with _$CaptureDaoMixin {
   /// Deletes all captured transactions.
   Future<int> deleteAllCaptures() {
     return delete(capturedTransactions).go();
-  }
-
-  /// Checks whether a transaction with the same amount already exists in the transactions table
-  /// within +/- 24 hours of the given date.
-  Future<bool> hasMatchingLoggedTransaction({
-    required int amountCents,
-    required DateTime date,
-  }) async {
-    final start = date.subtract(const Duration(hours: 24));
-    final end = date.add(const Duration(hours: 24));
-    final query = db.select(db.transactions)
-      ..where(
-        (t) =>
-            t.amount.equals(amountCents) &
-            t.date.isBiggerOrEqualValue(start) &
-            t.date.isSmallerOrEqualValue(end),
-      )
-      ..limit(1);
-    final match = await query.getSingleOrNull();
-    return match != null;
   }
 
   /// Purges confirmed and dismissed captures older than 90 days.

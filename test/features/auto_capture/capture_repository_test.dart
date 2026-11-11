@@ -118,6 +118,21 @@ void main() {
       expect(pending.first.accountLast4, '1234');
     });
 
+    test('does not add recharge advertisements to the capture inbox', () async {
+      await repo.ingest([
+        RawNotification(
+          key: 'recharge_ad',
+          packageName: 'com.google.android.apps.messaging',
+          title: 'VM-HDFCBK',
+          text:
+              'Recharge Rs 299 now and enjoy 2GB data per day with unlimited calls.',
+          postTime: DateTime.now().millisecondsSinceEpoch,
+        ),
+      ]);
+
+      expect(await repo.watchPendingCount().first, 0);
+    });
+
     test('deduplicates identical notification with conflict ignore', () async {
       final notif = RawNotification(
         key: '1',
@@ -166,6 +181,30 @@ void main() {
         expect(txs.length, 1);
         expect(txs.first.amount, 25000);
         expect(txs.first.categoryId, 1);
+      },
+    );
+
+    test(
+      'does not use an expense category suggestion for an income capture',
+      () async {
+        await prefsService.setMode(CaptureMode.addAutomatically);
+        await db.captureDao.setSuggestedCategory('swiggy', 1);
+
+        await repo.ingest([
+          RawNotification(
+            key: 'income_with_expense_rule',
+            packageName: 'com.google.android.apps.messaging',
+            title: 'VM-HDFCBK',
+            text: 'Rs 250 received from Swiggy. UPI Ref: 55443323.',
+            postTime: DateTime.now().millisecondsSinceEpoch,
+          ),
+        ]);
+
+        final pending = await repo.watchPendingCaptures().first;
+        expect(pending, hasLength(1));
+        expect(pending.single.type, TransactionType.income);
+        expect(pending.single.suggestedCategoryId, isNull);
+        expect(await db.select(db.transactions).get(), isEmpty);
       },
     );
 
@@ -261,11 +300,61 @@ void main() {
 
         final pending = await repo.watchPendingCaptures().first;
         expect(pending.length, 1); // Deduplicated! Only 1 item in inbox
+        expect(pending.single.duplicateCount, 1);
+      },
+    );
+
+    test(
+      'does not deduplicate the same reference when account suffix differs',
+      () async {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        await repo.ingest([
+          RawNotification(
+            key: 'account_one',
+            packageName: 'com.google.android.apps.messaging',
+            title: 'VM-HDFCBK',
+            text: 'Rs 500 debited from A/c XX1111. UPI Ref: 112233445566.',
+            postTime: now,
+          ),
+          RawNotification(
+            key: 'account_two',
+            packageName: 'com.google.android.apps.messaging',
+            title: 'VM-HDFCBK',
+            text: 'Rs 500 debited from A/c XX2222. UPI Ref: 112233445566.',
+            postTime: now + 500,
+          ),
+        ]);
+
+        final pending = await repo.watchPendingCaptures().first;
+        expect(pending, hasLength(2));
+        expect(pending.every((item) => item.duplicateCount == 0), isTrue);
       },
     );
   });
 
   group('CaptureRepository Confirm / Dismiss / Undo Tests', () {
+    test('rejects a category that conflicts with the capture type', () async {
+      await repo.ingest([
+        RawNotification(
+          key: 'income_wrong_category',
+          packageName: 'com.google.android.apps.messaging',
+          title: 'VM-HDFCBK',
+          text: 'Rs 500 received from Acme. UPI Ref: 11223345.',
+          postTime: DateTime.now().millisecondsSinceEpoch,
+        ),
+      ]);
+
+      final capture = (await repo.watchPendingCaptures().first).single;
+      expect(capture.type, TransactionType.income);
+
+      await expectLater(
+        repo.confirmCapture(capture.id, categoryId: 1),
+        throwsStateError,
+      );
+      expect(await db.select(db.transactions).get(), isEmpty);
+      expect(await repo.watchPendingCaptures().first, hasLength(1));
+    });
+
     test(
       'confirming pending capture creates transaction and sets confirmed atomically',
       () async {
@@ -386,9 +475,9 @@ void main() {
     );
   });
 
-  group('Duplicate Detection Tests', () {
+  group('Shopkeeper-safe duplicate handling', () {
     test(
-      'flags pending item as possible duplicate when matching transaction exists in db',
+      'keeps a legitimate same-amount payment separate from an existing transaction',
       () async {
         final categories = await db.categoryDao.getAllCategories();
         final catId = categories.first.id;
@@ -421,38 +510,63 @@ void main() {
 
         final pending = await repo.watchPendingCaptures().first;
         expect(pending.length, 1);
-        expect(pending.first.isPossibleDuplicate, isTrue);
+        expect(pending.first.amountCents, 50000);
       },
     );
 
+    test('keeps distinct same-amount payments in the inbox', () async {
+      final now = DateTime.now();
+
+      await repo.ingest([
+        RawNotification(
+          key: 'batch_1',
+          packageName: 'com.google.android.apps.messaging',
+          title: 'VM-HDFCBK',
+          text: 'Rs 250 debited from A/c XX1234. UPI Ref: 11110001.',
+          postTime: now.millisecondsSinceEpoch,
+        ),
+        RawNotification(
+          key: 'batch_2',
+          packageName: 'com.google.android.apps.messaging',
+          title: 'VM-HDFCBK',
+          text: 'Rs 250 debited from A/c XX1234. UPI Ref: 22220002.',
+          postTime: now.add(const Duration(minutes: 5)).millisecondsSinceEpoch,
+        ),
+      ]);
+
+      final pending = await repo.watchPendingCaptures().first;
+      expect(pending.length, 2);
+      expect(pending.map((item) => item.reference).toSet(), {
+        '11110001',
+        '22220002',
+      });
+    });
+
     test(
-      'flags intra-batch duplicates when two notifications share same amount within 24 hours',
+      'keeps identical no-reference payments when source events differ',
       () async {
-        final now = DateTime.now();
+        final now = DateTime.now().millisecondsSinceEpoch;
+        const message = 'Rs 250 debited from A/c XX1234 towards Cafe.';
 
         await repo.ingest([
           RawNotification(
-            key: 'batch_1',
+            key: 'sale_1',
             packageName: 'com.google.android.apps.messaging',
             title: 'VM-HDFCBK',
-            text: 'Rs 250 debited from A/c XX1234. UPI Ref: 11110001.',
-            postTime: now.millisecondsSinceEpoch,
+            text: message,
+            postTime: now,
           ),
           RawNotification(
-            key: 'batch_2',
+            key: 'sale_2',
             packageName: 'com.google.android.apps.messaging',
             title: 'VM-HDFCBK',
-            text: 'Rs 250 debited from A/c XX1234. UPI Ref: 22220002.',
-            postTime: now
-                .add(const Duration(minutes: 5))
-                .millisecondsSinceEpoch,
+            text: message,
+            postTime: now + 1000,
           ),
         ]);
 
         final pending = await repo.watchPendingCaptures().first;
-        expect(pending.length, 2);
-        expect(pending[0].isPossibleDuplicate, isTrue);
-        expect(pending[1].isPossibleDuplicate, isTrue);
+        expect(pending, hasLength(2));
       },
     );
 
@@ -471,7 +585,6 @@ void main() {
 
       final pending = await repo.watchPendingCaptures().first;
       expect(pending.length, 1);
-      expect(pending.first.isPossibleDuplicate, isFalse);
     });
   });
 }

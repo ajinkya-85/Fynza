@@ -30,7 +30,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +45,12 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4 && to >= 4) {
         await migrateLegacyCategoryColors();
+      }
+      if (from >= 2 && from < 5 && to >= 5) {
+        await m.addColumn(
+          capturedTransactions,
+          capturedTransactions.duplicateCount,
+        );
       }
     },
   );

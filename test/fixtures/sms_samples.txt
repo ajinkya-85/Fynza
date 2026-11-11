@@ -17,6 +17,7 @@
 {"text": "Purchase of INR 4,999.00 on your Credit Card XX0011 at ZARA. Balance limit: INR 40,000.", "expected": "parsed", "amountCents": 499900, "type": "expense", "acc": "0011", "isHigh": true}
 {"text": "Rs. 200 credited to your wallet from friend. Ref no 77665544.", "expected": "parsed", "amountCents": 20000, "type": "income", "ref": "77665544", "isHigh": true}
 {"text": "INR 50 charged for SMS alert service on A/c XX9988.", "expected": "parsed", "amountCents": 5000, "type": "expense", "acc": "9988", "isHigh": true}
+{"text": "Your mobile recharge of Rs 199 was successful. Ref no 9911223344.", "expected": "parsed", "amountCents": 19900, "type": "expense", "ref": "9911223344", "isHigh": true}
 
 # Rejection test cases (OTP, Promos, Statements, Failures, Foreign currencies, Person messages)
 {"text": "Your OTP for login to SBI Yono is 482910. Do not share with anyone. Valid for 5 mins.", "expected": "rejected"}
@@ -34,3 +35,6 @@
 {"text": "You received $50.00 from Paypal to your USD balance.", "expected": "rejected"}
 {"text": "Hey bro, can you send me 500 rupees tomorrow?", "expected": "rejected"}
 {"text": "Meeting at 5 pm in room 202.", "expected": "rejected"}
+{"text": "Recharge Rs 299 now and enjoy 2GB data per day with unlimited calls.", "expected": "rejected"}
+{"text": "Prepaid recharge offer: Rs 499 plan includes extra data and free streaming.", "expected": "rejected"}
+{"text": "Your prepaid balance is Rs 500. Special recharge offer available now.", "expected": "rejected"}

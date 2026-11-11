@@ -15,10 +15,11 @@ class CapturedTransactions extends Table {
   TextColumn get sender => text()();
   TextColumn get dedupeKey => text().unique()();
   TextColumn get status => textEnum<CaptureStatus>()();
-  IntColumn get transactionId => integer()
-      .nullable()
-      .customConstraint('NULL REFERENCES transactions(id) ON DELETE SET NULL')();
-  IntColumn get suggestedCategoryId => integer()
-      .nullable()
-      .customConstraint('NULL REFERENCES categories(id) ON DELETE SET NULL')();
+  IntColumn get duplicateCount => integer().withDefault(const Constant(0))();
+  IntColumn get transactionId => integer().nullable().customConstraint(
+    'NULL REFERENCES transactions(id) ON DELETE SET NULL',
+  )();
+  IntColumn get suggestedCategoryId => integer().nullable().customConstraint(
+    'NULL REFERENCES categories(id) ON DELETE SET NULL',
+  )();
 }

@@ -31,30 +31,9 @@ class CaptureRepositoryImpl implements CaptureRepository {
 
   @override
   Stream<List<CaptureItem>> watchPendingCaptures() {
-    return _dao.watchPendingCaptures().asyncMap((list) async {
-      final items = <CaptureItem>[];
-      for (var i = 0; i < list.length; i++) {
-        final t = list[i];
-        final isDuplicateInBatch = list.asMap().entries.any(
-          (entry) =>
-              entry.key != i &&
-              entry.value.amountCents == t.amountCents &&
-              entry.value.occurredAt.difference(t.occurredAt).abs().inHours <=
-                  24,
-        );
-        final hasDbMatch = await _dao.hasMatchingLoggedTransaction(
-          amountCents: t.amountCents,
-          date: t.occurredAt,
-        );
-        items.add(
-          _mapToDomain(
-            t,
-            isPossibleDuplicate: isDuplicateInBatch || hasDbMatch,
-          ),
-        );
-      }
-      return items;
-    });
+    return _dao.watchPendingCaptures().map(
+      (list) => list.map(_mapToDomain).toList(),
+    );
   }
 
   @override
@@ -122,13 +101,39 @@ class CaptureRepositoryImpl implements CaptureRepository {
       accountLast4: parseResult.accountLast4,
       sender: sender,
       rawText: raw.text,
+      notificationKey: raw.key,
+      packageName: raw.packageName,
+      postTime: raw.postTime,
     );
+    if (parseResult.reference != null) {
+      final matchingCapture = await _dao.findMatchingCaptureIdentity(
+        reference: parseResult.reference!,
+        amountCents: parseResult.amountCents,
+        type: parseResult.type,
+        accountLast4: parseResult.accountLast4,
+      );
+      if (matchingCapture != null) {
+        if (matchingCapture.status.isPending) {
+          await _dao.incrementDuplicateCount(matchingCapture.id);
+        }
+        return;
+      }
+    }
 
     // 5. Suggested category
     int? suggestedCatId;
     if (parseResult.counterparty != null) {
       final normCp = _normalizeCounterparty(parseResult.counterparty!);
       suggestedCatId = await _dao.getSuggestedCategory(normCp);
+      if (suggestedCatId != null) {
+        final category = await (_db.select(
+          _db.categories,
+        )..where((c) => c.id.equals(suggestedCatId!))).getSingleOrNull();
+        if (category == null ||
+            category.isIncome != parseResult.type.isIncome) {
+          suggestedCatId = null;
+        }
+      }
     }
 
     final mode = _prefs.getMode();
@@ -210,6 +215,13 @@ class CaptureRepositoryImpl implements CaptureRepository {
     final effectiveNote = note ?? capture.counterparty ?? 'Bank transaction';
 
     await _db.transaction(() async {
+      final category = await (_db.select(
+        _db.categories,
+      )..where((c) => c.id.equals(categoryId))).getSingleOrNull();
+      if (category == null || category.isIncome != effectiveType.isIncome) {
+        throw StateError('Selected category does not match transaction type.');
+      }
+
       // Insert transaction
       final txId = await _db
           .into(_db.transactions)
@@ -321,10 +333,7 @@ class CaptureRepositoryImpl implements CaptureRepository {
         .trim();
   }
 
-  CaptureItem _mapToDomain(
-    CapturedTransaction t, {
-    bool isPossibleDuplicate = false,
-  }) {
+  CaptureItem _mapToDomain(CapturedTransaction t) {
     return CaptureItem(
       id: t.id,
       amountCents: t.amountCents,
@@ -338,9 +347,9 @@ class CaptureRepositoryImpl implements CaptureRepository {
       sender: t.sender,
       dedupeKey: t.dedupeKey,
       status: t.status,
+      duplicateCount: t.duplicateCount,
       transactionId: t.transactionId,
       suggestedCategoryId: t.suggestedCategoryId,
-      isPossibleDuplicate: isPossibleDuplicate,
     );
   }
 }

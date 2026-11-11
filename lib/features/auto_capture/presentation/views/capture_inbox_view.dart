@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/services/currency_service.dart';
+import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/currency_formatter.dart';
 import '../../../../core/utils/date_formatter.dart';
 import '../../../../shared/models/app_currency.dart';
@@ -9,7 +10,6 @@ import '../../../../shared/providers/app_alert_provider.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../transactions/presentation/views/transaction_form_screen.dart';
 import '../../domain/models/capture_item.dart';
-import 'capture_inbox_grouping.dart';
 import '../view_models/capture_inbox_view_model.dart';
 
 class CaptureInboxView extends ConsumerWidget {
@@ -21,8 +21,12 @@ class CaptureInboxView extends ConsumerWidget {
     final state = ref.watch(captureInboxViewModelProvider);
     final viewModel = ref.read(captureInboxViewModelProvider.notifier);
     final currency = ref.watch(selectedCurrencyProvider);
-    final pendingGroups = groupPendingCaptures(state.pendingItems);
-
+    final repeatedItems = state.pendingItems
+        .where((item) => item.duplicateCount > 0)
+        .toList();
+    final reviewItems = state.pendingItems
+        .where((item) => item.duplicateCount == 0)
+        .toList();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Capture Inbox'),
@@ -55,15 +59,15 @@ class CaptureInboxView extends ConsumerWidget {
                         state.recentlyAutoAdded.isEmpty)
                       _buildEmptyState(context)
                     else ...[
-                      if (state.pendingItems.isNotEmpty) ...[
+                      if (reviewItems.isNotEmpty) ...[
                         Text(
-                          'Pending Review (${pendingGroups.length})',
+                          'Pending Review (${reviewItems.length})',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        ...pendingGroups.map(
+                        ...reviewItems.map(
                           (item) => _buildPendingItemTile(
                             context,
                             ref,
@@ -73,6 +77,42 @@ class CaptureInboxView extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 24),
+                      ],
+                      if (repeatedItems.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.copy_rounded,
+                              size: 18,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Repeated Notifications (${repeatedItems.length})',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Same transaction reference received again. Add it once if valid.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ...repeatedItems.map(
+                          (item) => _buildPendingItemTile(
+                            context,
+                            ref,
+                            item,
+                            viewModel,
+                            currency,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                       if (state.recentlyAutoAdded.isNotEmpty) ...[
                         Text(
@@ -146,106 +186,27 @@ class CaptureInboxView extends ConsumerWidget {
   Widget _buildPendingItemTile(
     BuildContext context,
     WidgetRef ref,
-    PendingCaptureGroup group,
+    CaptureItem item,
     CaptureInboxViewModel vm,
     AppCurrency currency,
   ) {
-    final item = group.primary;
-    final groupIds = group.items.map((capture) => capture.id).toList();
     final theme = Theme.of(context);
     final isExpense = item.type.isExpense;
+    final isDark = theme.brightness == Brightness.dark;
     final amountColor = isExpense
-        ? theme.colorScheme.error
-        : theme.colorScheme.primary;
-    final isDuplicate = item.isPossibleDuplicate;
-
+        ? (isDark ? const Color(0xFFFF8A80) : AppTheme.expenseAccent)
+        : (isDark ? const Color(0xFF81C784) : AppTheme.incomeAccent);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isDuplicate
-              ? Colors.amber.shade700
-              : theme.colorScheme.outlineVariant,
-          width: isDuplicate ? 1.5 : 1.0,
-        ),
+        side: BorderSide(color: theme.colorScheme.outlineVariant, width: 1.0),
       ),
-      color: isDuplicate
-          ? (theme.brightness == Brightness.dark
-                ? Colors.amber.withAlpha(20)
-                : const Color(0xFFFFFBEB))
-          : null,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (group.hasMultiple) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.tertiaryContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.copy_all_rounded,
-                      size: 18,
-                      color: theme.colorScheme.onTertiaryContainer,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${group.items.length} similar captures grouped. Add this transaction once?',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onTertiaryContainer,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ] else if (isDuplicate) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withAlpha(35),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.amber.shade700.withAlpha(120),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 18,
-                      color: Colors.amber.shade900,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Possible Duplicate • A similar transaction was already recorded around this time',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.amber.shade900,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -316,6 +277,15 @@ class CaptureInboxView extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  if (item.duplicateCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Received ${item.duplicateCount + 1} times • Add once',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -327,7 +297,7 @@ class CaptureInboxView extends ConsumerWidget {
               children: [
                 FilledButton.tonal(
                   onPressed: () async {
-                    final saved = await Navigator.of(context).push<bool>(
+                    await Navigator.of(context).push<bool>(
                       MaterialPageRoute<bool>(
                         builder: (_) => TransactionFormScreen(
                           captureIdToConfirm: item.id,
@@ -340,38 +310,25 @@ class CaptureInboxView extends ConsumerWidget {
                         ),
                       ),
                     );
-                    if (saved == true && group.hasMultiple) {
-                      await vm.dismissMany(groupIds.skip(1));
-                    }
                   },
-                  child: Text(
-                    group.hasMultiple
-                        ? 'Add once'
-                        : (isDuplicate ? 'Add Anyway' : 'Add'),
-                  ),
+                  child: const Text('Add'),
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton(
                   onPressed: () async {
-                    await vm.dismissMany(groupIds);
+                    await vm.dismiss(item.id);
                     if (context.mounted) {
                       ref
                           .read(appAlertProvider.notifier)
                           .show(
-                            group.hasMultiple
-                                ? 'Similar captures dismissed'
-                                : 'Transaction dismissed',
+                            'Transaction dismissed',
                             tone: AppAlertTone.information,
                             actionLabel: 'Undo',
-                            onAction: () => vm.undoDismissMany(groupIds),
+                            onAction: () => vm.undoDismiss(item.id),
                           );
                     }
                   },
-                  child: Text(
-                    group.hasMultiple
-                        ? 'Dismiss all'
-                        : (isDuplicate ? 'Dismiss Duplicate' : 'Dismiss'),
-                  ),
+                  child: const Text('Dismiss'),
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
@@ -410,6 +367,7 @@ class CaptureInboxView extends ConsumerWidget {
   ) {
     final theme = Theme.of(context);
     final isExpense = item.type.isExpense;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
       elevation: 0,
@@ -432,8 +390,12 @@ class CaptureInboxView extends ConsumerWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isExpense
-                        ? theme.colorScheme.error
-                        : theme.colorScheme.primary,
+                        ? (isDark
+                              ? const Color(0xFFFF8A80)
+                              : AppTheme.expenseAccent)
+                        : (isDark
+                              ? const Color(0xFF81C784)
+                              : AppTheme.incomeAccent),
                   ),
                 ),
               ),

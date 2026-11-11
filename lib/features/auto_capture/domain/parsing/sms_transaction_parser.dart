@@ -47,17 +47,20 @@ class SmsTransactionParser {
     final lowerText = text.toLowerCase();
 
     // 1. Check for OTP / Security keywords
-    for (final otp in ParserRules.rejectionOtpKeywords) {
-      if (lowerText.contains(otp)) {
-        return const NotATransaction('OTP or verification code message');
-      }
+    if (_containsAnyKeyword(lowerText, ParserRules.rejectionOtpKeywords)) {
+      return const NotATransaction('OTP or verification code message');
     }
 
     // 2. Check for other rejection rules (promos, statements, failed, future tense)
-    for (final rej in ParserRules.rejectionKeywords) {
-      if (lowerText.contains(rej)) {
-        return NotATransaction('Rejected keyword found: $rej');
+    String? rejectedKeyword;
+    for (final keyword in ParserRules.rejectionKeywords) {
+      if (_containsAnyKeyword(lowerText, [keyword])) {
+        rejectedKeyword = keyword;
+        break;
       }
+    }
+    if (rejectedKeyword != null) {
+      return NotATransaction('Rejected keyword found: $rejectedKeyword');
     }
 
     // 3. Currency check: Must not contain foreign currencies without INR
@@ -78,26 +81,13 @@ class SmsTransactionParser {
     bool isCredit = false;
     bool isReversal = false;
 
-    for (final rev in ParserRules.reversalKeywords) {
-      if (lowerText.contains(rev)) {
-        isReversal = true;
-        break;
-      }
-    }
-
-    for (final deb in ParserRules.debitKeywords) {
-      if (lowerText.contains(deb)) {
-        isDebit = true;
-        break;
-      }
-    }
-
-    for (final cred in ParserRules.creditKeywords) {
-      if (lowerText.contains(cred)) {
-        isCredit = true;
-        break;
-      }
-    }
+    isReversal = _containsAnyKeyword(lowerText, ParserRules.reversalKeywords);
+    isDebit =
+        _containsAnyKeyword(lowerText, ParserRules.debitKeywords) ||
+        ParserRules.successfulRechargePatterns.any(
+          (pattern) => pattern.hasMatch(lowerText),
+        );
+    isCredit = _containsAnyKeyword(lowerText, ParserRules.creditKeywords);
 
     if (isReversal) {
       // Reversals/refunds are treated as income
@@ -114,7 +104,9 @@ class SmsTransactionParser {
     // 5. Amount extraction
     final amountCents = _extractTransactionAmount(text);
     if (amountCents == null || amountCents <= 0) {
-      return const NotATransaction('Could not extract valid transaction amount');
+      return const NotATransaction(
+        'Could not extract valid transaction amount',
+      );
     }
 
     // 6. Account number last 4 digits
@@ -129,12 +121,12 @@ class SmsTransactionParser {
     // 9. Confidence assessment
     // High: amount + unambiguous type + (reference or accountLast4)
     // Medium: reversal/refund or missing both reference and account
-    final isHigh = !isReversal &&
+    final isHigh =
+        !isReversal &&
         (reference != null && reference.isNotEmpty ||
             accountLast4 != null && accountLast4.isNotEmpty);
 
-    final confidence =
-        isHigh ? ParseConfidence.high : ParseConfidence.medium;
+    final confidence = isHigh ? ParseConfidence.high : ParseConfidence.medium;
 
     return ParsedTransaction(
       amountCents: amountCents,
@@ -180,12 +172,19 @@ class SmsTransactionParser {
       }
     }
 
-    // Fallback if the first match was not balance-prefixed
-    final firstRaw = matches.first.group(1);
-    if (firstRaw != null) {
-      return parseAmountStringToCents(firstRaw);
-    }
+    // Do not fall back to a balance/limit amount when no transaction amount
+    // was found. That commonly turns account updates and offers into captures.
     return null;
+  }
+
+  bool _containsAnyKeyword(String text, Iterable<String> keywords) {
+    return keywords.any((keyword) {
+      final escaped = RegExp.escape(keyword);
+      return RegExp(
+        '(^|[^a-z0-9])$escaped(\$|[^a-z0-9])',
+        caseSensitive: false,
+      ).hasMatch(text);
+    });
   }
 
   String? _extractAccountLast4(String text) {
@@ -236,8 +235,14 @@ class SmsTransactionParser {
 
   String _cleanCounterparty(String raw) {
     var cleaned = raw
-        .replaceAll(RegExp(r'^(?:vpa|info:|towards|to|from)\s*', caseSensitive: false), '')
-        .replaceAll(RegExp(r'[@/][A-Za-z0-9._\-]+$'), '') // strip @okaxis / @upi handles
+        .replaceAll(
+          RegExp(r'^(?:vpa|info:|towards|to|from)\s*', caseSensitive: false),
+          '',
+        )
+        .replaceAll(
+          RegExp(r'[@/][A-Za-z0-9._\-]+$'),
+          '',
+        ) // strip @okaxis / @upi handles
         .replaceAll(RegExp(r'[*]+'), '')
         .trim();
 

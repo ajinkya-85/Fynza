@@ -62,6 +62,7 @@ class TransactionFormState {
     int? amountCents,
     TransactionType? type,
     int? categoryId,
+    bool clearCategory = false,
     DateTime? date,
     String? note,
     bool? isSubmitting,
@@ -73,7 +74,7 @@ class TransactionFormState {
       editingId: editingId ?? this.editingId,
       amountCents: amountCents ?? this.amountCents,
       type: type ?? this.type,
-      categoryId: categoryId ?? this.categoryId,
+      categoryId: clearCategory ? null : (categoryId ?? this.categoryId),
       date: date ?? this.date,
       note: note ?? this.note,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -98,11 +99,19 @@ class TransactionFormNotifier extends StateNotifier<TransactionFormState> {
   }
 
   void setType(TransactionType type) {
-    state = state.copyWith(type: type, clearError: true);
+    state = state.copyWith(
+      type: type,
+      clearCategory: type != state.type,
+      clearError: true,
+    );
   }
 
   void setCategory(int categoryId) {
     state = state.copyWith(categoryId: categoryId, clearError: true);
+  }
+
+  void clearCategory() {
+    state = state.copyWith(clearCategory: true, clearError: true);
   }
 
   void setDate(DateTime date) {
@@ -115,7 +124,9 @@ class TransactionFormNotifier extends StateNotifier<TransactionFormState> {
 
   Future<bool> save({int? captureIdToConfirm}) async {
     if (state.amountCents <= 0) {
-      state = state.copyWith(errorMessage: 'Please enter an amount greater than 0');
+      state = state.copyWith(
+        errorMessage: 'Please enter an amount greater than 0',
+      );
       return false;
     }
     if (state.categoryId == null) {
@@ -167,10 +178,28 @@ class TransactionFormNotifier extends StateNotifier<TransactionFormState> {
 }
 
 final transactionFormNotifierProvider = StateNotifierProvider.autoDispose
-    .family<TransactionFormNotifier, TransactionFormState, TransactionWithCategory?>(
-  (ref, initial) {
-    final repository = ref.watch(transactionRepositoryProvider);
-    final captureRepo = ref.watch(captureRepositoryProvider);
-    return TransactionFormNotifier(repository, initial, captureRepo);
-  },
-);
+    .family<
+      TransactionFormNotifier,
+      TransactionFormState,
+      TransactionWithCategory?
+    >((ref, initial) {
+      final repository = ref.watch(transactionRepositoryProvider);
+      final captureRepo = ref.watch(captureRepositoryProvider);
+      return TransactionFormNotifier(repository, initial, captureRepo);
+    });
+
+final recentTransactionCategoriesProvider = StreamProvider.autoDispose
+    .family<List<int>, TransactionType>((ref, type) {
+      final repository = ref.watch(transactionRepositoryProvider);
+      return repository.watchRecentTransactions(limit: 100).map((transactions) {
+        final categoryIds = <int>[];
+        for (final item in transactions) {
+          if (item.transaction.type == type &&
+              !categoryIds.contains(item.transaction.categoryId)) {
+            categoryIds.add(item.transaction.categoryId);
+          }
+          if (categoryIds.length == 3) break;
+        }
+        return categoryIds;
+      });
+    });

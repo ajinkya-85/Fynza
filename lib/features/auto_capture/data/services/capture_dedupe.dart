@@ -7,9 +7,7 @@ import '../../../../shared/models/transaction_type.dart';
 class CaptureDedupe {
   CaptureDedupe._();
 
-  /// Creates a SHA-256 dedupe key.
-  /// - If [reference] is present, key = SHA256(reference).
-  /// - Otherwise, key = SHA256(type + amountCents + accountLast4 + sender + normalizedText).
+  /// Creates a key from a scoped transaction reference or an exact source event.
   static String computeKey({
     required int amountCents,
     required TransactionType type,
@@ -17,24 +15,35 @@ class CaptureDedupe {
     String? accountLast4,
     required String sender,
     required String rawText,
+    required String notificationKey,
+    required String packageName,
+    required int postTime,
   }) {
     if (reference != null && reference.trim().isNotEmpty) {
-      final cleanRef = reference.trim().toLowerCase();
-      final bytes = utf8.encode('ref:$cleanRef');
-      return sha256.convert(bytes).toString();
+      return _hash([
+        'reference',
+        reference.trim().toLowerCase(),
+        amountCents.toString(),
+        type.name,
+        accountLast4?.trim() ?? '',
+      ]);
     }
 
-    final normalized = normalizeText(rawText);
-    final payload = [
+    return _hash([
+      'source-event',
+      packageName.trim().toLowerCase(),
+      notificationKey.trim(),
+      postTime.toString(),
+      sender.trim().toUpperCase(),
       type.name,
       amountCents.toString(),
-      accountLast4 ?? '',
-      sender.trim().toUpperCase(),
-      normalized,
-    ].join('|');
+      accountLast4?.trim() ?? '',
+      normalizeText(rawText),
+    ]);
+  }
 
-    final bytes = utf8.encode(payload);
-    return sha256.convert(bytes).toString();
+  static String _hash(List<String> components) {
+    return sha256.convert(utf8.encode(components.join('|'))).toString();
   }
 
   /// Normalizes SMS text by stripping timestamps, whitespace, and case.

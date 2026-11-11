@@ -12,7 +12,9 @@ class BackupValidator {
     // 1. Envelope validation
     final formatVersion = json['formatVersion'];
     if (formatVersion == null || formatVersion is! int) {
-      throw const CorruptDataFailure('Backup envelope is missing a valid formatVersion.');
+      throw const CorruptDataFailure(
+        'Backup envelope is missing a valid formatVersion.',
+      );
     }
 
     if (formatVersion > BackupSerializer.currentFormatVersion) {
@@ -21,23 +23,33 @@ class BackupValidator {
 
     final createdAt = json['createdAt'];
     if (createdAt == null || createdAt is! int) {
-      throw const CorruptDataFailure('Backup envelope is missing a valid createdAt timestamp.');
+      throw const CorruptDataFailure(
+        'Backup envelope is missing a valid createdAt timestamp.',
+      );
     }
 
     final rawData = json['data'];
     if (rawData == null || rawData is! Map<String, dynamic>) {
-      throw const CorruptDataFailure('Backup file is missing the data section.');
+      throw const CorruptDataFailure(
+        'Backup file is missing the data section.',
+      );
     }
 
     // 2. Data sections presence
     if (rawData['categories'] is! List) {
-      throw const CorruptDataFailure('Missing or invalid categories section in backup.');
+      throw const CorruptDataFailure(
+        'Missing or invalid categories section in backup.',
+      );
     }
     if (rawData['transactions'] is! List) {
-      throw const CorruptDataFailure('Missing or invalid transactions section in backup.');
+      throw const CorruptDataFailure(
+        'Missing or invalid transactions section in backup.',
+      );
     }
     if (rawData['budgets'] is! List) {
-      throw const CorruptDataFailure('Missing or invalid budgets section in backup.');
+      throw const CorruptDataFailure(
+        'Missing or invalid budgets section in backup.',
+      );
     }
 
     final rawCategories = rawData['categories'] as List<dynamic>;
@@ -68,7 +80,9 @@ class BackupValidator {
         throw CorruptDataFailure('Category at index $i has an invalid id.');
       }
       if (categoryIds.contains(id)) {
-        throw CorruptDataFailure('Duplicate category ID ($id) found in backup.');
+        throw CorruptDataFailure(
+          'Duplicate category ID ($id) found in backup.',
+        );
       }
       categoryIds.add(id);
 
@@ -85,13 +99,15 @@ class BackupValidator {
         throw CorruptDataFailure('Category $id has an invalid isIncome flag.');
       }
 
-      categories.add(CategoryDto(
-        id: id,
-        name: name.trim(),
-        icon: icon,
-        color: color,
-        isIncome: isIncome as bool? ?? false,
-      ));
+      categories.add(
+        CategoryDto(
+          id: id,
+          name: name.trim(),
+          icon: icon,
+          color: color,
+          isIncome: isIncome as bool? ?? false,
+        ),
+      );
     }
 
     // 4. Transactions validation
@@ -101,7 +117,9 @@ class BackupValidator {
     for (var i = 0; i < rawTransactions.length; i++) {
       final item = rawTransactions[i];
       if (item is! Map<String, dynamic>) {
-        throw CorruptDataFailure('Transaction at index $i is not a valid object.');
+        throw CorruptDataFailure(
+          'Transaction at index $i is not a valid object.',
+        );
       }
 
       final id = item['id'];
@@ -116,41 +134,55 @@ class BackupValidator {
         throw CorruptDataFailure('Transaction at index $i has an invalid id.');
       }
       if (transactionIds.contains(id)) {
-        throw CorruptDataFailure('Duplicate transaction ID ($id) found in backup.');
+        throw CorruptDataFailure(
+          'Duplicate transaction ID ($id) found in backup.',
+        );
       }
       transactionIds.add(id);
 
       if (amount is! int || amount < 0) {
-        throw CorruptDataFailure('Transaction $id has an invalid amount ($amount).');
+        throw CorruptDataFailure(
+          'Transaction $id has an invalid amount ($amount).',
+        );
       }
       if (type is! String || (type != 'income' && type != 'expense')) {
-        throw CorruptDataFailure('Transaction $id has an invalid type ($type).');
+        throw CorruptDataFailure(
+          'Transaction $id has an invalid type ($type).',
+        );
       }
       if (categoryId is! int) {
         throw CorruptDataFailure('Transaction $id has an invalid categoryId.');
       }
       if (!categoryIds.contains(categoryId)) {
-        throw CorruptDataFailure('Transaction $id references non-existent category $categoryId.');
+        throw CorruptDataFailure(
+          'Transaction $id references non-existent category $categoryId.',
+        );
       }
       if (date is! int) {
-        throw CorruptDataFailure('Transaction $id has an invalid date timestamp.');
+        throw CorruptDataFailure(
+          'Transaction $id has an invalid date timestamp.',
+        );
       }
       if (note != null && note is! String) {
         throw CorruptDataFailure('Transaction $id has an invalid note format.');
       }
       if (txCreatedAt != null && txCreatedAt is! int) {
-        throw CorruptDataFailure('Transaction $id has an invalid createdAt timestamp.');
+        throw CorruptDataFailure(
+          'Transaction $id has an invalid createdAt timestamp.',
+        );
       }
 
-      transactions.add(TransactionDto(
-        id: id,
-        amount: amount,
-        type: type,
-        categoryId: categoryId,
-        date: date,
-        note: note as String?,
-        createdAt: (txCreatedAt as int?) ?? date,
-      ));
+      transactions.add(
+        TransactionDto(
+          id: id,
+          amount: amount,
+          type: type,
+          categoryId: categoryId,
+          date: date,
+          note: note as String?,
+          createdAt: (txCreatedAt as int?) ?? date,
+        ),
+      );
     }
 
     // 5. Budgets validation
@@ -182,10 +214,14 @@ class BackupValidator {
         throw CorruptDataFailure('Budget $id has an invalid categoryId.');
       }
       if (!categoryIds.contains(categoryId)) {
-        throw CorruptDataFailure('Budget $id references non-existent category $categoryId.');
+        throw CorruptDataFailure(
+          'Budget $id references non-existent category $categoryId.',
+        );
       }
       if (amountLimit is! int || amountLimit < 0) {
-        throw CorruptDataFailure('Budget $id has an invalid amount limit ($amountLimit).');
+        throw CorruptDataFailure(
+          'Budget $id has an invalid amount limit ($amountLimit).',
+        );
       }
       if (month is! int || month < 1 || month > 12) {
         throw CorruptDataFailure('Budget $id has an invalid month ($month).');
@@ -196,17 +232,21 @@ class BackupValidator {
 
       final uniqueKey = '$categoryId-$month-$year';
       if (budgetUniqueKeys.contains(uniqueKey)) {
-        throw CorruptDataFailure('Duplicate budget for category $categoryId in $month/$year.');
+        throw CorruptDataFailure(
+          'Duplicate budget for category $categoryId in $month/$year.',
+        );
       }
       budgetUniqueKeys.add(uniqueKey);
 
-      budgets.add(BudgetDto(
-        id: id,
-        categoryId: categoryId,
-        amountLimit: amountLimit,
-        month: month,
-        year: year,
-      ));
+      budgets.add(
+        BudgetDto(
+          id: id,
+          categoryId: categoryId,
+          amountLimit: amountLimit,
+          month: month,
+          year: year,
+        ),
+      );
     }
 
     // 6. Captured transactions validation (optional section)
@@ -214,13 +254,17 @@ class BackupValidator {
     final rawCaptures = rawData['capturedTransactions'];
     if (rawCaptures != null) {
       if (rawCaptures is! List) {
-        throw const CorruptDataFailure('Invalid capturedTransactions section in backup.');
+        throw const CorruptDataFailure(
+          'Invalid capturedTransactions section in backup.',
+        );
       }
       final captureIds = <int>{};
       for (var i = 0; i < rawCaptures.length; i++) {
         final item = rawCaptures[i];
         if (item is! Map<String, dynamic>) {
-          throw CorruptDataFailure('Captured transaction at index $i is not a valid object.');
+          throw CorruptDataFailure(
+            'Captured transaction at index $i is not a valid object.',
+          );
         }
 
         final id = item['id'];
@@ -232,31 +276,55 @@ class BackupValidator {
         final sender = item['sender'];
         final dedupeKey = item['dedupeKey'];
         final status = item['status'];
+        final duplicateCount = item['duplicateCount'];
         final txId = item['transactionId'];
         final catId = item['suggestedCategoryId'];
 
         if (id is! int || captureIds.contains(id)) {
-          throw CorruptDataFailure('Captured transaction at index $i has invalid or duplicate id.');
+          throw CorruptDataFailure(
+            'Captured transaction at index $i has invalid or duplicate id.',
+          );
         }
         captureIds.add(id);
 
         if (amountCents is! int || amountCents <= 0) {
-          throw CorruptDataFailure('Captured transaction $id has invalid amountCents.');
+          throw CorruptDataFailure(
+            'Captured transaction $id has invalid amountCents.',
+          );
         }
         if (type != 'expense' && type != 'income') {
-          throw CorruptDataFailure('Captured transaction $id has invalid type.');
+          throw CorruptDataFailure(
+            'Captured transaction $id has invalid type.',
+          );
         }
         if (occurredAt is! int || capturedAt is! int) {
-          throw CorruptDataFailure('Captured transaction $id has invalid timestamps.');
+          throw CorruptDataFailure(
+            'Captured transaction $id has invalid timestamps.',
+          );
         }
-        if (sourcePackage is! String || sender is! String || dedupeKey is! String || status is! String) {
-          throw CorruptDataFailure('Captured transaction $id has invalid string fields.');
+        if (sourcePackage is! String ||
+            sender is! String ||
+            dedupeKey is! String ||
+            status is! String) {
+          throw CorruptDataFailure(
+            'Captured transaction $id has invalid string fields.',
+          );
+        }
+        if (duplicateCount != null &&
+            (duplicateCount is! int || duplicateCount < 0)) {
+          throw CorruptDataFailure(
+            'Captured transaction $id has invalid duplicateCount.',
+          );
         }
         if (txId != null && (txId is! int || !transactionIds.contains(txId))) {
-          throw CorruptDataFailure('Captured transaction $id references non-existent transactionId ($txId).');
+          throw CorruptDataFailure(
+            'Captured transaction $id references non-existent transactionId ($txId).',
+          );
         }
         if (catId != null && (catId is! int || !categoryIds.contains(catId))) {
-          throw CorruptDataFailure('Captured transaction $id references non-existent suggestedCategoryId ($catId).');
+          throw CorruptDataFailure(
+            'Captured transaction $id references non-existent suggestedCategoryId ($catId).',
+          );
         }
 
         capturedTransactions.add(CapturedTransactionDto.fromJson(item));

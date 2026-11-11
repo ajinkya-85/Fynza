@@ -14,12 +14,12 @@ class BackupEnvelopeDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'formatVersion': formatVersion,
-        'appVersion': appVersion,
-        'dbSchemaVersion': dbSchemaVersion,
-        'createdAt': createdAt,
-        'data': data.toJson(),
-      };
+    'formatVersion': formatVersion,
+    'appVersion': appVersion,
+    'dbSchemaVersion': dbSchemaVersion,
+    'createdAt': createdAt,
+    'data': data.toJson(),
+  };
 
   factory BackupEnvelopeDto.fromJson(Map<String, dynamic> json) {
     return BackupEnvelopeDto(
@@ -48,14 +48,15 @@ class BackupDataDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'categories': categories.map((c) => c.toJson()).toList(),
-        'transactions': transactions.map((t) => t.toJson()).toList(),
-        'budgets': budgets.map((b) => b.toJson()).toList(),
-        'preferences': preferences,
-        if (capturedTransactions.isNotEmpty)
-          'capturedTransactions':
-              capturedTransactions.map((ct) => ct.toJson()).toList(),
-      };
+    'categories': categories.map((c) => c.toJson()).toList(),
+    'transactions': transactions.map((t) => t.toJson()).toList(),
+    'budgets': budgets.map((b) => b.toJson()).toList(),
+    'preferences': preferences,
+    if (capturedTransactions.isNotEmpty)
+      'capturedTransactions': capturedTransactions
+          .map((ct) => ct.toJson())
+          .toList(),
+  };
 
   factory BackupDataDto.fromJson(Map<String, dynamic> json) {
     final rawCats = json['categories'] as List<dynamic>? ?? [];
@@ -76,7 +77,9 @@ class BackupDataDto {
           .toList(),
       preferences: Map<String, dynamic>.from(rawPrefs),
       capturedTransactions: rawCaptures
-          .map((e) => CapturedTransactionDto.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) => CapturedTransactionDto.fromJson(e as Map<String, dynamic>),
+          )
           .toList(),
     );
   }
@@ -98,12 +101,12 @@ class CategoryDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'icon': icon,
-        'color': color,
-        'isIncome': isIncome,
-      };
+    'id': id,
+    'name': name,
+    'icon': icon,
+    'color': color,
+    'isIncome': isIncome,
+  };
 
   factory CategoryDto.fromJson(Map<String, dynamic> json) {
     return CategoryDto(
@@ -136,14 +139,14 @@ class TransactionDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'amount': amount,
-        'type': type,
-        'categoryId': categoryId,
-        'date': date,
-        if (note != null) 'note': note,
-        'createdAt': createdAt,
-      };
+    'id': id,
+    'amount': amount,
+    'type': type,
+    'categoryId': categoryId,
+    'date': date,
+    if (note != null) 'note': note,
+    'createdAt': createdAt,
+  };
 
   factory TransactionDto.fromJson(Map<String, dynamic> json) {
     return TransactionDto(
@@ -174,12 +177,12 @@ class BudgetDto {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'categoryId': categoryId,
-        'amountLimit': amountLimit,
-        'month': month,
-        'year': year,
-      };
+    'id': id,
+    'categoryId': categoryId,
+    'amountLimit': amountLimit,
+    'month': month,
+    'year': year,
+  };
 
   factory BudgetDto.fromJson(Map<String, dynamic> json) {
     return BudgetDto(
@@ -205,6 +208,7 @@ class CapturedTransactionDto {
   final String sender;
   final String dedupeKey;
   final String status;
+  final int duplicateCount;
   final int? transactionId;
   final int? suggestedCategoryId;
 
@@ -221,27 +225,28 @@ class CapturedTransactionDto {
     required this.sender,
     required this.dedupeKey,
     required this.status,
+    this.duplicateCount = 0,
     this.transactionId,
     this.suggestedCategoryId,
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'amountCents': amountCents,
-        'type': type,
-        if (counterparty != null) 'counterparty': counterparty,
-        if (accountLast4 != null) 'accountLast4': accountLast4,
-        if (reference != null) 'reference': reference,
-        'occurredAt': occurredAt,
-        'capturedAt': capturedAt,
-        'sourcePackage': sourcePackage,
-        'sender': sender,
-        'dedupeKey': dedupeKey,
-        'status': status,
-        if (transactionId != null) 'transactionId': transactionId,
-        if (suggestedCategoryId != null)
-          'suggestedCategoryId': suggestedCategoryId,
-      };
+    'id': id,
+    'amountCents': amountCents,
+    'type': type,
+    if (counterparty != null) 'counterparty': counterparty,
+    if (accountLast4 != null) 'accountLast4': accountLast4,
+    if (reference != null) 'reference': reference,
+    'occurredAt': occurredAt,
+    'capturedAt': capturedAt,
+    'sourcePackage': sourcePackage,
+    'sender': sender,
+    'dedupeKey': dedupeKey,
+    'status': status,
+    if (duplicateCount > 0) 'duplicateCount': duplicateCount,
+    if (transactionId != null) 'transactionId': transactionId,
+    if (suggestedCategoryId != null) 'suggestedCategoryId': suggestedCategoryId,
+  };
 
   factory CapturedTransactionDto.fromJson(Map<String, dynamic> json) {
     return CapturedTransactionDto(
@@ -257,6 +262,7 @@ class CapturedTransactionDto {
       sender: json['sender'] as String,
       dedupeKey: json['dedupeKey'] as String,
       status: json['status'] as String,
+      duplicateCount: json['duplicateCount'] as int? ?? 0,
       transactionId: json['transactionId'] as int?,
       suggestedCategoryId: json['suggestedCategoryId'] as int?,
     );

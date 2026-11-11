@@ -7,6 +7,7 @@ import 'package:fynza/core/di/database_provider.dart';
 import 'package:fynza/core/services/currency_service.dart';
 import 'package:fynza/data/db/app_database.dart';
 import 'package:fynza/features/transactions/presentation/views/transaction_form_screen.dart';
+import 'package:fynza/shared/models/transaction_type.dart';
 
 void main() {
   group('TransactionFormScreen Widget Tests', () {
@@ -17,7 +18,9 @@ void main() {
       prefs = await SharedPreferences.getInstance();
     });
 
-    testWidgets('renders all form elements with optical typography', (tester) async {
+    testWidgets('renders all form elements with optical typography', (
+      tester,
+    ) async {
       final testDb = AppDatabase.forTesting(NativeDatabase.memory());
 
       await tester.pumpWidget(
@@ -26,9 +29,7 @@ void main() {
             databaseProvider.overrideWithValue(testDb),
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
-          child: const MaterialApp(
-            home: TransactionFormScreen(),
-          ),
+          child: const MaterialApp(home: TransactionFormScreen()),
         ),
       );
 
@@ -48,7 +49,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('tapping quick amount chips increments the amount value', (tester) async {
+    testWidgets('tapping quick amount chips increments the amount value', (
+      tester,
+    ) async {
       final testDb = AppDatabase.forTesting(NativeDatabase.memory());
 
       await tester.pumpWidget(
@@ -57,9 +60,7 @@ void main() {
             databaseProvider.overrideWithValue(testDb),
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
-          child: const MaterialApp(
-            home: TransactionFormScreen(),
-          ),
+          child: const MaterialApp(home: TransactionFormScreen()),
         ),
       );
 
@@ -82,7 +83,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('switching between Expense and Income updates segment', (tester) async {
+    testWidgets('switching between Expense and Income updates segment', (
+      tester,
+    ) async {
       final testDb = AppDatabase.forTesting(NativeDatabase.memory());
 
       await tester.pumpWidget(
@@ -91,9 +94,7 @@ void main() {
             databaseProvider.overrideWithValue(testDb),
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
-          child: const MaterialApp(
-            home: TransactionFormScreen(),
-          ),
+          child: const MaterialApp(home: TransactionFormScreen()),
         ),
       );
 
@@ -104,6 +105,112 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Income'), findsOneWidget);
+
+      await testDb.close();
+      await tester.pump();
+    });
+
+    testWidgets('prefilled income capture offers only income categories', (
+      tester,
+    ) async {
+      final testDb = AppDatabase.forTesting(NativeDatabase.memory());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(testDb),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: const MaterialApp(
+            home: TransactionFormScreen(
+              prefilledAmountCents: 25000,
+              prefilledType: TransactionType.income,
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Food & Dining'), findsNothing);
+      final moreButton = find.text('More (1)');
+      await tester.ensureVisible(moreButton);
+      await tester.tap(moreButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Salary'), findsOneWidget);
+      expect(find.text('Food & Dining'), findsNothing);
+
+      await testDb.close();
+      await tester.pump();
+    });
+
+    testWidgets('shows three recent categories with searchable More list', (
+      tester,
+    ) async {
+      final testDb = AppDatabase.forTesting(NativeDatabase.memory());
+      final categories = await testDb.select(testDb.categories).get();
+      final recentNames = [
+        'Food & Dining',
+        'Groceries',
+        'Transport',
+        'Entertainment',
+      ];
+      final now = DateTime.now();
+      for (var index = 0; index < recentNames.length; index++) {
+        final category = categories.firstWhere(
+          (item) => item.name == recentNames[index],
+        );
+        await testDb
+            .into(testDb.transactions)
+            .insert(
+              TransactionsCompanion.insert(
+                amount: 1000 + index,
+                type: TransactionType.expense,
+                categoryId: category.id,
+                date: now.add(Duration(days: index)),
+              ),
+            );
+      }
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(testDb),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: const MaterialApp(home: TransactionFormScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Entertainment'), findsOneWidget);
+      expect(find.text('Food & Dining'), findsNothing);
+      final moreButton = find.text('More (5)');
+      await tester.ensureVisible(moreButton);
+      await tester.tap(moreButton);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('category_search_field')), findsOneWidget);
+      expect(find.text('Food & Dining'), findsOneWidget);
+      await tester.enterText(
+        find.byKey(const Key('category_search_field')),
+        'Bills',
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bills & Utilities'), findsOneWidget);
+      expect(find.text('Food & Dining'), findsNothing);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(Wrap).last,
+          matching: find.text('Bills & Utilities'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('category_search_field')), findsNothing);
+      expect(find.text('Bills & Utilities'), findsOneWidget);
+      expect(find.text('Entertainment'), findsOneWidget);
 
       await testDb.close();
       await tester.pump();

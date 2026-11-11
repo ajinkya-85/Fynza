@@ -15,9 +15,9 @@ class CaptureItem {
   final String sender;
   final String dedupeKey;
   final CaptureStatus status;
+  final int duplicateCount;
   final int? transactionId;
   final int? suggestedCategoryId;
-  final bool isPossibleDuplicate;
 
   const CaptureItem({
     required this.id,
@@ -32,8 +32,8 @@ class CaptureItem {
     required this.sender,
     required this.dedupeKey,
     required this.status,
+    this.duplicateCount = 0,
     this.transactionId,
     this.suggestedCategoryId,
-    this.isPossibleDuplicate = false,
   });
 }

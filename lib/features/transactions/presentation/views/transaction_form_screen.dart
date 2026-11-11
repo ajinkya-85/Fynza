@@ -12,6 +12,7 @@ import '../../../../shared/widgets/category_icon.dart';
 import '../../../../shared/widgets/fading_scroll_boundary.dart';
 import '../../../../shared/widgets/fluid_segmented_control.dart';
 import '../../../../shared/widgets/pressable_scale.dart';
+import '../../../categories/domain/models/category.dart';
 import '../../../categories/presentation/view_models/categories_notifier.dart';
 import '../view_models/transaction_form_notifier.dart';
 
@@ -43,6 +44,8 @@ class TransactionFormScreen extends ConsumerStatefulWidget {
 class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   late final TextEditingController _amountController;
   late final TextEditingController _noteController;
+  late final TextEditingController _categorySearchController;
+  bool _isCategoryListExpanded = false;
 
   @override
   void initState() {
@@ -57,6 +60,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
     _noteController = TextEditingController(
       text: widget.initial?.transaction.note ?? widget.prefilledNote ?? '',
     );
+    _categorySearchController = TextEditingController();
 
     if (widget.initial == null &&
         (widget.prefilledAmountCents != null ||
@@ -91,6 +95,7 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
+    _categorySearchController.dispose();
     super.dispose();
   }
 
@@ -133,6 +138,9 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
       transactionFormNotifierProvider(widget.initial).notifier,
     );
     final categoriesState = ref.watch(categoriesNotifierProvider);
+    final recentCategoryIdsAsync = ref.watch(
+      recentTransactionCategoriesProvider(formState.type),
+    );
     final currency = ref.watch(selectedCurrencyProvider);
 
     final isIncome = formState.type == TransactionType.income;
@@ -355,19 +363,205 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                     );
                   }
 
-                  return Wrap(
+                  final recentIds = recentCategoryIdsAsync.valueOrNull ?? [];
+                  final recentCategories = <Category>[];
+                  for (final id in recentIds) {
+                    for (final category in filtered) {
+                      if (category.id == id) {
+                        recentCategories.add(category);
+                        break;
+                      }
+                    }
+                  }
+                  final selectedCategories = filtered
+                      .where((category) => category.id == formState.categoryId)
+                      .toList();
+                  final selectedCategory = selectedCategories.isEmpty
+                      ? null
+                      : selectedCategories.first;
+                  final orderedRecent = [
+                    ?selectedCategory,
+                    ...recentCategories.where(
+                      (category) => category.id != formState.categoryId,
+                    ),
+                  ];
+                  final visibleRecent =
+                      (orderedRecent.isNotEmpty ? orderedRecent : filtered)
+                          .take(3)
+                          .toList();
+                  final visibleRecentIds = visibleRecent
+                      .map((category) => category.id)
+                      .toSet();
+                  final query = _categorySearchController.text
+                      .trim()
+                      .toLowerCase();
+                  final moreCategories = filtered.where((category) {
+                    if (query.isNotEmpty) {
+                      return category.name.toLowerCase().contains(query);
+                    }
+                    return !visibleRecentIds.contains(category.id);
+                  }).toList();
+
+                  Widget categoryChips(List<Category> items) => Wrap(
                     spacing: 10,
                     runSpacing: 10,
-                    children: filtered.map((cat) {
+                    children: items.map((cat) {
                       final isSelected = formState.categoryId == cat.id;
                       return _CategoryChip(
                         label: cat.name,
                         iconKey: cat.icon,
                         colorValue: cat.color,
                         isSelected: isSelected,
-                        onTap: () => formNotifier.setCategory(cat.id),
+                        onTap: () {
+                          setState(() {
+                            _isCategoryListExpanded = false;
+                            _categorySearchController.clear();
+                          });
+                          formNotifier.setCategory(cat.id);
+                        },
                       );
                     }).toList(),
+                  );
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        recentCategories.isEmpty ? 'Categories' : 'Recent',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      categoryChips(visibleRecent),
+                      if (filtered.length > visibleRecent.length) ...[
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _isCategoryListExpanded =
+                                    !_isCategoryListExpanded;
+                                if (!_isCategoryListExpanded) {
+                                  _categorySearchController.clear();
+                                }
+                              });
+                            },
+                            icon: AnimatedRotation(
+                              turns: _isCategoryListExpanded ? 0.5 : 0,
+                              duration: const Duration(milliseconds: 220),
+                              curve: SpringCurves.criticallyDamped,
+                              child: const Icon(Icons.expand_more_rounded),
+                            ),
+                            label: Text(
+                              _isCategoryListExpanded
+                                  ? 'Less'
+                                  : 'More (${filtered.length - visibleRecent.length})',
+                            ),
+                          ),
+                        ),
+                      ],
+                      ClipRect(
+                        child: AnimatedSize(
+                          duration: const Duration(milliseconds: 260),
+                          curve: SpringCurves.criticallyDamped,
+                          alignment: Alignment.topCenter,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 180),
+                            reverseDuration: const Duration(milliseconds: 140),
+                            switchInCurve: SpringCurves.criticallyDamped,
+                            switchOutCurve: Curves.easeIn,
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, -0.025),
+                                      end: Offset.zero,
+                                    ).animate(animation),
+                                    child: child,
+                                  ),
+                                ),
+                            child: _isCategoryListExpanded
+                                ? Column(
+                                    key: const ValueKey('expanded_categories'),
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      TextField(
+                                        key: const Key('category_search_field'),
+                                        controller: _categorySearchController,
+                                        onChanged: (_) => setState(() {}),
+                                        decoration: InputDecoration(
+                                          hintText: 'Search categories',
+                                          prefixIcon: const Icon(
+                                            Icons.search_rounded,
+                                          ),
+                                          suffixIcon: query.isEmpty
+                                              ? null
+                                              : IconButton(
+                                                  tooltip: 'Clear search',
+                                                  onPressed: () {
+                                                    _categorySearchController
+                                                        .clear();
+                                                    setState(() {});
+                                                  },
+                                                  icon: const Icon(
+                                                    Icons.close_rounded,
+                                                  ),
+                                                ),
+                                          isDense: true,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      AnimatedSwitcher(
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        switchInCurve:
+                                            SpringCurves.criticallyDamped,
+                                        switchOutCurve: Curves.easeIn,
+                                        transitionBuilder: (child, animation) =>
+                                            FadeTransition(
+                                              opacity: animation,
+                                              child: child,
+                                            ),
+                                        child: moreCategories.isEmpty
+                                            ? Text(
+                                                'No matching categories.',
+                                                key: const ValueKey(
+                                                  'no_matching_categories',
+                                                ),
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                              )
+                                            : KeyedSubtree(
+                                                key: ValueKey(query),
+                                                child: categoryChips(
+                                                  moreCategories,
+                                                ),
+                                              ),
+                                      ),
+                                    ],
+                                  )
+                                : const SizedBox(
+                                    key: ValueKey('collapsed_categories'),
+                                    width: double.infinity,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
                   );
                 },
               ),
@@ -537,6 +731,16 @@ class _TransactionFormScreenState extends ConsumerState<TransactionFormScreen> {
                     : () async {
                         HapticFeedback.lightImpact();
                         final navigator = Navigator.of(context);
+                        final selectedCategoryMatchesType =
+                            categoriesState.valueOrNull?.any(
+                              (category) =>
+                                  category.id == formState.categoryId &&
+                                  category.isIncome == isIncome,
+                            ) ??
+                            false;
+                        if (!selectedCategoryMatchesType) {
+                          formNotifier.clearCategory();
+                        }
                         final success = await formNotifier.save(
                           captureIdToConfirm: widget.captureIdToConfirm,
                         );

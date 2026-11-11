@@ -154,15 +154,15 @@ Architecture rules currently applied:
   - Determines transaction type (`expense`/`income`), counterparty/merchant, account last 4, reference number.
   - Supports both SMS formats and modern UPI app notification structures (e.g. `"Paid ₹150 to Swiggy using HDFC Bank •••• 1234"`).
   - Evaluates confidence score (`high`, `medium`, `low`).
-  - Rejects OTPs, balance queries, promotional spam, and loan offers.
+  - Uses whole-word transaction markers (so `paid` does not match `prepaid`), rejects known recharge/data-plan promotions, and requires a payment completion marker for recharge confirmations.
+  - Rejects OTPs, balance queries, promotional spam, and loan offers. If every amount in a message is identified as a balance/limit, it does not fall back to those amounts as transaction values.
 - **Cross-Source Deduplication & Duplicate Prevention (`CaptureDedupe.dart`, `CaptureDao.dart`, `CaptureRepository.dart`)**:
-  - **Exact Deduplication**: Generates deterministic SHA-256 dedupe keys based on UPI reference / transaction ID or sender + normalized text + amount. Automatically deduplicates identical incoming notifications via SQLite UNIQUE constraint with `InsertMode.insertOrIgnore`.
-  - **Possible Duplicate Detection**: Detects potential duplicates within ±24 hours (`CaptureDao.hasMatchingLoggedTransaction`).
-  - **Duplicate Warning UI (Yellow Treatment)**: Highlighted in `CaptureInboxView` with amber/yellow border and warning badge (`⚠️ Possible Duplicate`).
-    - Likely-identical pending captures are grouped into one inbox card, with one `Add once` action that confirms one capture and dismisses grouped copies only after the transaction saves. Action rows wrap on narrow screens to avoid pixel overflow.
+  - **Strong-identity deduplication**: If a parsed transaction reference exists, its key also includes amount, type, and account suffix, preventing a reused/misparsed reference from suppressing a materially different payment. Reference matching also recognizes compatible older capture rows. Without a reference, deduplication uses the exact source event identity and message, not amount/time similarity.
+  - **Shopkeeper-safe review**: Same-amount transactions are never flagged or grouped based on a time window. Every distinct capture remains a separate inbox card and can be added/dismissed independently; this avoids dropping legitimate repeated sales. Action rows wrap on narrow screens to avoid pixel overflow.
+  - **Repeated Notifications section**: Pending captures with the same transaction reference, amount, direction, and compatible account suffix are represented once with a repeat count and shown in a restrained inbox section with a single Add action. Similar-looking transactions and different references remain separate.
   - **App Alerts (`lib/shared/providers/app_alert_provider.dart`, `lib/shared/widgets/app_alert_host.dart`)**: Bottom alerts are collected in a shared `Updates` section over the app rather than separate snackbars. Undoable alerts keep their action button; informational, success, and error alerts can be dismissed individually or cleared together.
 - **Database & DAO (`captured_transactions_table.dart`, `counterparty_rules_table.dart`, `capture_dao.dart`)**:
-  - Drift schema v4 with migration strategy from v1-v3 preserving existing tables and data, including migration of legacy category palette colors.
+  - Drift schema v5 with migrations preserving existing data, including legacy category palette colors and a default-zero duplicate notification count for strong-reference matches.
   - Stores status (`pending`, `confirmed`, `dismissed`) and nullable foreign key `transaction_id`.
   - Includes auto-purge for dismissed/confirmed captures older than 90 days.
 - **Capture Modes & Master Toggle**:
@@ -173,6 +173,7 @@ Architecture rules currently applied:
   - Background and foreground drains leave the native queue untouched while the master switch is off; Android and Dart both default the switch to OFF.
   - The native listener records whether a notification came from the device's default SMS app, allowing valid notifications from unlisted SMS packages through the Dart source gate.
   - Automatic transaction creation checks the dedupe key and inserts the transaction and capture record in one database transaction, preventing replayed notifications from creating duplicate transactions.
+  - Capture review opens the transaction form prefilled with the parsed income/expense type; category options are filtered by that type, switching types clears the previous category, and mismatched remembered or submitted categories are rejected.
   - Per-notification ingestion and queue/scheduler failures emit diagnostics without logging captured message text.
 
 ## Application Branding & Package Information
@@ -206,7 +207,7 @@ Architecture rules currently applied:
 - **Layer Boundary Guarantee**: Zero views import or communicate with repositories, DAOs, or database classes directly (with cross-feature coordination managed via app-level composition). Views talk exclusively to their ViewModels.
 - **Offline-First Guarantee**: 100% offline-first operation. Zero internet permissions in `android/app/src/main/AndroidManifest.xml`.
 - **Data Integrity**: All money values are strictly integer cents (`int`), with zero floating-point conversions.
-- **Drift Database**: Schema v4 with `MigrationStrategy(onUpgrade: ...)` preserving existing data and migrating already-saved legacy category palette colors; DAOs are feature-scoped; all UI data binding uses reactive `.watch()` streams.
+- **Drift Database**: Schema v5 with `MigrationStrategy(onUpgrade: ...)` preserving existing data and migrating already-saved legacy category palette colors; DAOs are feature-scoped; all UI data binding uses reactive `.watch()` streams.
 - **Material 3 & Apple Fluid Design**:
   - Centralized dynamic theming via `AppTheme`, zero hardcoded colors, full dark/light mode support.
   - AppBar scrolling is seamless with `scrolledUnderElevation: 0` and `surfaceTintColor: Colors.transparent` (zero shade darkening on scroll).

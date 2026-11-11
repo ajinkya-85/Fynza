@@ -89,6 +89,7 @@ Architecture rules currently applied:
 - **Quick Amount Chips**: Spring-bouncing increment chips (`+50`, `+100`, `+500`, `+1,000`, `+5,000`) with instant tactile feedback.
 - **Fluid Segmented Type Control**: Fluid sliding segmented control for Expense vs Income with haptics.
 - **Tactile Category Chips**: Pressable chips with glowing color-matched halo shadows, illuminated icon badges, and selection haptics.
+- **Recent Category Picker**: Transaction entry shows up to three recently used categories for the current income/expense type; when there is no history, it shows the first three matching categories. The animated `More` section expands to a searchable list. Selecting a category collapses the list, clears the query, and pins the selection first among the recent chips.
 - **Apple-Style Date Card & Note Input**: Tactile squircle date picker card and streamlined note textfield.
 - **Spring Submit Button**: Full-width primary action button with `PressableScale` and haptic completion feedback.
 
@@ -98,6 +99,7 @@ Architecture rules currently applied:
 - **Elevated `BudgetCard`**: Squircle cards with category icon badge, progress percentage / over-limit warning pills, optical amount typography, and tactile edit/delete actions.
 - **Elevated `BudgetScreen`**: Gradient hero total budget card, category count chips, and smooth bouncing physics.
 - **Tactile `BudgetFormDialog`**: Clean squircle presentation with quick amount chips (`+500`, `+1k`, `+2k`, `+5k`) and tactile save button.
+- **Budget Category Picker**: New budgets show up to three recently used expense categories, falling back to the first three expense categories when there is no history. The animated `More` section provides search. No category is selected by default; the user must choose one. After selection, the list collapses, search clears, and the selected category is pinned first among the recent chips. Editing an existing budget retains its assigned category.
 - **Elevated `CategoriesScreen`**: FluidSegmentedControl type switcher (Expenses / Income), squircle category tiles with illuminated badges and tactile delete dialogs.
 
 ### Currency
